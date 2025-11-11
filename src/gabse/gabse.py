@@ -16,6 +16,7 @@ REQUIRED packages:
     - sortedcontainers
     - numpy
     - copy
+    - scipy.spatial
 """
 # %%
 # Import required packages
@@ -30,12 +31,16 @@ from scipy.spatial import cKDTree as _cKDTree
 # Engine class for managing the simulation
 
 class Engine:
-    def __init__(self, modelTime, dimensions):
+    def __init__(self, modelTime, dimensions, context=None):
         self.tick = 0.0
         self.modelTime = modelTime
         self.schedule = Schedule(self.tick)
-        self.context = Context(dimensions)
 
+        # Initialize context, allowing for custom context to be passed
+        if context is None:
+            self.context = Context(dimensions)
+        else:
+            self.context = context
     
     def run(self):
         while self.tick <= self.modelTime and self.schedule.get_size() > 0:

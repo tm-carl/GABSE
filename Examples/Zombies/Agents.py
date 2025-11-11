@@ -1,4 +1,4 @@
-import gabse
+from src.gabse import gabse
 import numpy as np
 
 
