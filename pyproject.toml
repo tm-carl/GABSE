@@ -1,0 +1,36 @@
+# toml
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gabse"
+version = "0.1.1"
+description = "The GABSE (Generic Agent-Based Simulation for Engineering) framework"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "Carl Toller Melén", email = "carl@tollermelen.se" },
+]
+maintainers = [
+  { name = "Carl Toller Melén", email = "carl@tollermelen.se" },
+]
+
+dependencies = [
+    "numpy>=2.3.4",
+    "scipy>=1.16.3",
+    "sortedcontainers>=2.4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/tm-carl/GABSE"
+#Documentation = "https://eriktoller.github.io/andfn/n"
+#Repository = "https://github.com/eriktoller/andfn"
+#Issues = "https://github.com/eriktoller/andfn/issues"
+
+[tool.setuptools.packages.find]
+include = ["gabse"]
+
+[tool.setuptools.dynamic]
+version = { attr = "gabse.__version__" }

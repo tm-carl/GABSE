@@ -1,6 +1,6 @@
-from src.gabse import gabse
+from gabse import context
 import numpy as np
-
+import gabse
 
 class Person(gabse.Agent):
     def __init__(self, speed, engine, position=np.array([0, 0, 0])):

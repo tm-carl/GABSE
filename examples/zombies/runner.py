@@ -24,7 +24,6 @@ with open("zombie_simulation_data.json", "w") as f:
 # %%
 
 # Visualize the simulation data
-import visualizer as vc
 
 # Animate from the saved JSON file
 #anim = vc.animate_repo_from_json("zombie_simulation_data.json", interval=10, carry_forward=True, figsize=(12,9))

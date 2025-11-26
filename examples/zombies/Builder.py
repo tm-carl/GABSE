@@ -4,10 +4,12 @@ Created on Mon Oct 27 10:46:12 2025
 
 @author: cat
 """
+
 # %%
 # Import required packages
+import gabse
 
-from src.gabse import gabse
+from gabse import context
 import Agents # Agents module containing Person and Zombie classes
 import numpy as np
 

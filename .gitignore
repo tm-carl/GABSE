@@ -1,0 +1,5 @@
+/dist/
+/.venv/
+__pycache__/
+/gabse.egg-info/
+/notes.ipynb
