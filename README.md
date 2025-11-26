@@ -5,19 +5,19 @@ This is the GABSE (Generic Agent-Based Simulation for Engineering) framework.  I
 GABSE can be installed from PyPi (currently only available in TestPyPi)
 
 Installation:
-'''
+```
 pip install -i https://test.pypi.org/simple/ gabse
-'''
+```
 
 Update:
-'''
+```
 pip install -i https://test.pypi.org/simple/ gabse --upgrade
-'''
+```
 
 Uninstall:
-'''
+```
 pip uninstall gabse
-'''
+```
 
 ### Dependencies
 GABSE has the following dependencies
