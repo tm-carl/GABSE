@@ -21,16 +21,16 @@ pip uninstall gabse
 
 ### Dependencies
 GABSE has the following dependencies
-    - sortedcontainers
-    - numpy
-    - scipy
+- sortedcontainers
+- numpy
+- scipy
 
 ## Funactionality
 Loreum ipsum.
 
 ## EXAMPLES
 These are some example simulations that can be used for testing and learning how the GABSE framework functions.
-    - Zombie apocalypse (both 2D and 3D)
+- Zombie apocalypse (both 2D and 3D)
 
 ## About
 This simulation framework was developed based on PhD research conducted at the Department of Mechanical Engineering, Blekinge Institute of Technology.
