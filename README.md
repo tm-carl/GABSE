@@ -2,16 +2,16 @@
 This is the GABSE (Generic Agent-Based Simulation for Engineering) framework.  It provides classes and methods for creating and managing simulations involving agents, their actions, sensors, and the simulation context. It is based on an agent-based modeling technique and is developed with the intention of being lightweight, scalable, and flexible. This package provides the engine, action scheduling, generic agent functionality, and tools for sensory data collection and management.
 
 ## Installation
-GABSE can be installed from PyPi (currently only available in TestPyPi)
+GABSE can be installed from PyPi using pip.
 
 Installation:
 ```
-pip install -i https://test.pypi.org/simple/ gabse
+pip install gabse
 ```
 
 Update:
 ```
-pip install -i https://test.pypi.org/simple/ gabse --upgrade
+pip install gabse --upgrade
 ```
 
 Uninstall:
