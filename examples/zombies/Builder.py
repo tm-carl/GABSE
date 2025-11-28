@@ -13,6 +13,7 @@ from gabse import context
 import Agents # Agents module containing Person and Zombie classes
 import numpy as np
 
+
 # %%
 # Builder class to set up the simulation environment
 

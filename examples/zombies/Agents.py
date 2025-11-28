@@ -80,7 +80,7 @@ class Zombie(gabse.Agent):
         return closestPerson
 
     def hunt(self):
-        ngh = self.find_closest_person()
+        ngh = self.find_closest_person()[0]
 
         # Check if all people are dead
         if ngh == "":
@@ -100,7 +100,7 @@ class Zombie(gabse.Agent):
 
             self.move_vector(runVector)
 
-            if self.get_distance(self, ngh) < 1.0:
+            if self.get_distance(ngh) < 1.0:
                 self.kill(ngh)
 
             # agents = ["Zombie", "Person"]
