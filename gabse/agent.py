@@ -65,7 +65,7 @@ class Agent:
     def find_neighbours(self, agents: list, noOfNeighbours: int) -> list | Any:
         """
         Calculates the distance between *self* and a list of *agents*, neighbours, based on Euclidean distance. It then
-        filters out based on the number of neighbours to include.
+        filters out based on the number of neighbours to include, minimum one.
 
         Parameters
         ----------
