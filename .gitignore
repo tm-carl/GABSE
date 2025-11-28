@@ -5,3 +5,9 @@ __pycache__/
 /gabse.egg-info/
 /notes.ipynb
 .pre-commit-cofig.yaml
+/.pypirc
+/conf.py
+/index.rst
+/make.bat
+/Makefile
+/zombie_simulation_data.json
