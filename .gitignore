@@ -12,3 +12,4 @@ __pycache__/
 /make.bat
 /Makefile
 /zombie_simulation_data.json
+*.pyc
