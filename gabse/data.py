@@ -1,19 +1,19 @@
 """
-@author: Carl Toller Melén
-
+This module contains the operational data classes.
 """
 
 # %%
 # Import required packages
 import numpy as np
 import copy
+from typing import TYPE_CHECKING
 
-import gabse
+if TYPE_CHECKING:
+    from gabse.engine import Engine
+    from gabse.agent import Agent
 
 
 # %%
-# Sensor class for logging agent data over time
-
 class Sensor:
     """
     A class representing a sensor that logs data from an agent over time. The sensor logs the sensory data based on the
@@ -38,29 +38,26 @@ class Sensor:
         A list to store logged data entries.
     frequency : float
         The frequency at which the sensor logs data.
-
-    Methods
-    -------
-    entry(*getters: list)
-        Logs a data entry based on specified getters from the parent agent.
-    get_frequency() -> float
-        Returns the logging frequency of the sensor.
-    get_logger() -> list
-        Returns the logged data entries.
     """
+
     # Initializes the sensor with engine reference, parent agent, empty logger, and frequency
-    def __init__(self, engine:gabse.Engine, parent:gabse.Agent, frequency:float):
+    def __init__(self, engine: "Engine", parent: "Agent", frequency: float):
         self.engine = engine
         self.parent = parent
         self.logger = list()
         self.frequency = frequency
 
     # Logs data entries based on specified getters
-    def entry(self, *getters:list):
+    def entry(self, *getters: list):
         """
         Logs a data entry by calling specified getter methods from the parent agent.
+
+        Parameters
+        ----------
+        getters : list
+            A list of names of all the getter method to call.
         """
-        entry = {"tick": self.engine.get_tick()}
+        entry = {"tick": self.engine.schedule.get_tick()}
 
         for arg in getters:
             # print(g)
@@ -72,12 +69,16 @@ class Sensor:
                     continue
 
             data = method()
-            #check if data is numpy array and convert to list
+            # check if data is numpy array and convert to list
             if isinstance(data, np.ndarray):
-                data = data.tolist() # to avoid reference issues with mutable data types
+                data = (
+                    data.tolist()
+                )  # to avoid reference issues with mutable data types
             else:
                 try:
-                    data = copy.copy(data) # to avoid reference issues with mutable data types
+                    data = copy.copy(
+                        data
+                    )  # to avoid reference issues with mutable data types
                 except Exception:
                     pass
 
@@ -111,20 +112,47 @@ class Sensor:
 
 
 # %%
-# Data Collector class for gathering and exporting data from agents' and context sensors
-
 class DataCollector:
+    """
+    The data collection manager used for collecting and exporting the operational data for a simulation. The export is
+    stored in a dictionary.
+
+    Parameters
+    ----------
+    engine:Engine
+        The simulation engine
+
+    Attributes
+    ----------
+    engine:Engine
+        The simulation engine
+    repo:dict
+        The data repository.
+    """
+
     def __init__(self, engine):
         self.engine = engine
         self.repo = dict()
 
-    # Collects data from all agents' sensors and stores it in the repository
     def collect_data(self):
+        """
+        Collects data from all agents' sensors and stores it in the repository.
+        """
         for agt in self.engine.context.get_agents():
-            self.repo[f"{agt.__class__.__name__} {agt.id}"] = agt.get_sensor().get_logger()
+            self.repo[f"{agt.__class__.__name__} {agt.id}"] = (
+                agt.get_sensor().get_logger()
+            )
 
         # print(self.repo)
 
-    # Exports the collected data repository
     def export_data(self):
+        """
+        Exports the collected data repository.
+
+        Returns
+        -------
+        repo:dict
+            The data repository.
+
+        """
         return self.repo

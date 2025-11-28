@@ -8,14 +8,13 @@ Created on Mon Oct 27 10:46:12 2025
 # %%
 # Import required packages
 import gabse
-
-from gabse import context
-import Agents # Agents module containing Person and Zombie classes
+import Agents  # Agents module containing Person and Zombie classes
 import numpy as np
 
 
 # %%
 # Builder class to set up the simulation environment
+
 
 class Builder:
     def __init__(self):
@@ -37,37 +36,46 @@ class Builder:
 
     # Method to set up the simulation context with agents
     def populate_context(self):
-
         low = self.dimensions[0:3]
         high = self.dimensions[3:]
 
         for i in range(self.personNum):
-            startPos = np.array([
-                l if l == h else np.random.randint(l,h)
-                for l, h in zip(low, high)],
-                dtype='f')
-            
+            startPos = np.array(
+                [
+                    low_entry
+                    if low_entry == high_entry
+                    else np.random.randint(low_entry, high_entry)
+                    for low_entry, high_entry in zip(low, high)
+                ],
+                dtype="f",
+            )
+
             p = Agents.Person(self.personSpeed, self.engine, startPos)
             self.context.add_agent(p)
-            
+
             a = gabse.Action(1, p, "run", interval=1.0)
             self.engine.schedule.schedule_action(a)
-        
+
         for i in range(self.zombieNum):
-            startPos = np.array([
-                l if l == h else np.random.randint(l,h)
-                for l, h in zip(low, high)],
-                dtype='f')
+            startPos = np.array(
+                [
+                    low_entry
+                    if low_entry == high_entry
+                    else np.random.randint(low_entry, high_entry)
+                    for low_entry, high_entry in zip(low, high)
+                ],
+                dtype="f",
+            )
             z = Agents.Zombie(self.zombieSpeed, self.engine, startPos)
             self.context.add_agent(z)
-            
+
             a = gabse.Action(1, z, "hunt", priority=10, interval=1.0)
             self.engine.schedule.schedule_action(a)
 
-        l = Agents.Logger(self.engine)
-        self.context.add_agent(l)
+        log_agent = Agents.Logger(self.engine)
+        self.context.add_agent(log_agent)
 
-        #self.engine.schedule.printSchedule()
+        # self.engine.schedule.printSchedule()
 
     # Getters
     def get_context(self):

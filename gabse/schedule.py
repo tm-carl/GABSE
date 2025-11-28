@@ -1,21 +1,23 @@
 """
-@author: Carl Toller Melén
-
+This module contains the simulation scheduling classes.
 """
 
 # %%
 # Import required packages
 from sortedcontainers import SortedList
+from typing import TYPE_CHECKING
 
-import gabse
+if TYPE_CHECKING:
+    from gabse.agent import Agent
 
 
 # %%
-# Action class for representing scheduled actions
-
 class Action:
     """
-    A class representing a scheduled action in the simulation.
+    A class representing a scheduled action in the simulation. Each behavior that is to be invoked by an agent is
+    scheduled and called using *Action*. It is possible to set an action to be reoccurring by using the *interval*
+    parameter.
+
     Parameters
     ----------
     tick: float
@@ -45,10 +47,19 @@ class Action:
     priority: int, optional
         The priority of the action (lower values indicate higher priority). Default is 0.
     interval: float, optional
-        The interval for recurring actions. If greater than 0, the action will be rescheduled
+        The interval for recurring actions, has to be. If greater than 0, the action will be rescheduled
         after execution. Default is 0.
     """
-    def __init__(self, tick:float, agent:gabse.Agent, method:str, args:list=None, priority:int=0, interval:float=0):
+
+    def __init__(
+        self,
+        tick: float,
+        agent: "Agent",
+        method: str,
+        args: list = None,
+        priority: int = 0,
+        interval: float = 0,
+    ):
         self.tick = float(tick)
         self.agent = agent
         self.method = method
@@ -56,17 +67,24 @@ class Action:
         self.priority = int(priority)
         self.interval = float(interval)
 
+        # check so that interval is greater than zero, if not set to zero.
+        if self.interval < 0.0:
+            self.interval = 0.0
+
     def __str__(self):
         return f"Action entry:\ntick: {self.tick}, agent: {self.agent}, method: {self.method}, arguments: {self.args}, priority: {self.priority}, interval: {self.interval}"
 
 
 # %%
-# Schedule class for managing and executing scheduled actions
 class Schedule:
     """
     A class for managing and executing scheduled actions in the simulation. The core of the schedule is a list where
     all planned actions are stored and executed one by one. The schedule uses a SortedList to maintain order of the
     actions based on tick and priority.
+
+    The schedule uses an event-based stepping approach meaning that it does not use fixed tick steps but instead jumps
+    between the ticks of the scheduled actions. This means that the tick can step in various lengths depending on the
+    actions. A dynamic tick step approach enables greater flexibility and faster simulations.
 
     Parameters
     ----------
@@ -79,14 +97,11 @@ class Schedule:
         A sorted list of scheduled actions, ordered by tick and priority.
     tick: float
         The current simulation tick.
-
-
-    -----
-
     """
+
     # Creates an empty schedule (list) and tick timer, set to zero
     # List is sorted based on tick value of actions and priority
-    def __init__(self, tick:float):
+    def __init__(self, tick: float):
         self.schedule = SortedList(key=lambda a: (a.tick, a.priority))
         self.tick = tick
 
@@ -106,7 +121,7 @@ class Schedule:
     def step(self) -> float:
         """
         Steps one entry in the schedule. The step method executes the next action entry and, if reoccurring, re-schedules
-        it. It also moves the tick forward one instance.
+        it. It also moves the tick forward one instance, can be the same if multiple actions are scheduled at the same tick.
 
         Returns
         -------
@@ -155,41 +170,73 @@ class Schedule:
                 agent=action.agent,
                 method=action.method,
                 args=action.args,
-                interval=action.interval
+                interval=action.interval,
             )
             self.schedule_action(nextAction)
 
         # Remove the executed action from the schedule
         self.schedule.pop(0)
 
-        #Return current tick
+        # Return current tick
         return self.tick
 
-
-    # Filter out all actions related to the target agent
+    #
     def remove_agent_from_list(self, target):
         """
+        Removes all actions related to the target agent. This is useful if an agent has become obsolete, e.g. killed.
 
-        :param target:
-        :return:
+        Parameters
+        ----------
+        target : Agent
+            The agent whose actions are to be removed.
         """
         self.schedule = SortedList(
             [action for action in self.schedule if action.agent != target],
-            key=lambda action: (action.tick, action.priority)
+            key=lambda action: (action.tick, action.priority),
         )
 
     def get_schedule(self) -> SortedList:
+        """
+        Gets the schedule.
+
+        Returns
+        -------
+        schedule: SortedList
+            The schedule.
+        """
         return self.schedule
 
     def print_schedule(self):
+        """
+        Prints all actions in the schedule.
+        """
         for action in self.schedule:
             print(action)
 
     def get_tick(self) -> float:
+        """
+        Gets the current tick in the schedule.
+
+        Returns
+        -------
+        tick : float
+            The current tick.
+        """
         return self.tick
 
     def get_size(self) -> int:
+        """
+        Gets the size of the schedule.
+
+        Returns
+        -------
+        size: int
+            The size (length) of the schedule.
+        """
         return len(self.schedule)
 
     def clear_schedule(self):
+        """
+        Clears the schedule.
+        """
         self.schedule.clear()

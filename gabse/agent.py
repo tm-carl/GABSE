@@ -1,22 +1,25 @@
 """
-@author: Carl Toller Melén
-
+This module contains the simulation agent class.
 """
+
 from typing import Any
 
 # %%
 # Import required packages
 import numpy as np
+from gabse.data import Sensor
 from numpy import floating
 from numpy.typing import NDArray
 from scipy.spatial import cKDTree as _cKDTree
 
-import gabse
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from gabse.engine import Engine
 
 
 # %%
-# Agent class for representing entities in the simulation
-
 class Agent:
     """
     A class representing an agent in the simulation. An agent will possess a specific behavior that it executes during
@@ -37,7 +40,7 @@ class Agent:
     Attributes
     ----------
     id: int
-        Unique identifier for the agent.
+        Unique identifier for the agent, automatically generated.
     position: np.ndarray
         The 3D position of the agent in the simulation space.
     engine: Engine
@@ -45,11 +48,12 @@ class Agent:
     sensor: Sensor
         The sensor associated with the agent.
     """
+
     # Static variable to keep track of agent IDs
     _id_counter = 0
 
     # Initialize agent with unique ID, position, engine reference, and empty sensor
-    def __init__(self, engine:gabse.Engine, position:NDArray[np.float64]=None):
+    def __init__(self, engine: "Engine", position: NDArray[np.float64] = None):
         Agent._id_counter += 1
         self.id = Agent._id_counter
         if position is None:
@@ -58,8 +62,7 @@ class Agent:
         self.position = position
         self.sensor = None
 
-    # Find nearest neighbours based on Euclidean distance
-    def find_neighbours(self, agents:list, noOfNeighbours:int) -> list:
+    def find_neighbours(self, agents: list, noOfNeighbours: int) -> list | Any:
         """
         Calculates the distance between *self* and a list of *agents*, neighbours, based on Euclidean distance. It then
         filters out based on the number of neighbours to include.
@@ -73,7 +76,7 @@ class Agent:
 
         Returns
         -------
-        neighbours : list
+        neighbours : list or Any
             A list of nearest agents, or single agent if *noOfNeighbours == 1*
         """
         if not agents:
@@ -118,8 +121,6 @@ class Agent:
 
             return [agents[i] for i in idx_sorted[:k]]
 
-
-    # Check if agent is out of bounds and change the position so that it is within bounds
     def check_out_of_bounds(self) -> NDArray[np.float64]:
         """
         Checks if the agent is outside the simulation context and if so moves it to the closest point within the context.
@@ -136,8 +137,7 @@ class Agent:
 
         return np.clip(self.position, minValues, maxValues)
 
-    #Move agent to a specific position
-    def move_position(self, position:NDArray[np.float64]):
+    def move_position(self, position: NDArray[np.float64]):
         """
         Moves the agent to a new position. It also does a check so that the agent is still within the bounds of the context.
 
@@ -155,7 +155,7 @@ class Agent:
         except Exception:
             pass
 
-    def move_vector(self, vector:NDArray[np.float64]):
+    def move_vector(self, vector: NDArray[np.float64]):
         """
         Moves the agent to a new position based on a move vector. It also does a check so that the agent is still
         within the bounds of the context.
@@ -175,7 +175,7 @@ class Agent:
             pass
 
     # Calculate Euclidean distance between two agents
-    def get_distance(self, agent2:"Agent") -> floating[Any]:
+    def get_distance(self, agent2: "Agent") -> floating[Any]:
         """
         Calculates the Euclidean distance between two points.
 
@@ -193,22 +193,51 @@ class Agent:
         """
         return np.linalg.norm(self.get_position() - agent2.get_position())
 
-
-    def find_shortest_path(self, network):
-        pass
+    # def find_shortest_path(self, network):
+    #    pass
 
     # Add sensor to agent
-    def add_sensor(self, sensor):
+    def add_sensor(self, sensor: Sensor):
+        """
+        Adds a sensor to the agent.
+
+        Parameters
+        ----------
+        sensor : Sensor
+            The sensor to be added.
+        """
         self.sensor = sensor
 
     # Getters and Setters
-    def get_sensor(self):
+    def get_sensor(self) -> Sensor:
+        """
+        Gets a sensor from the agent.
+
+        Returns
+        -------
+        sensor : Sensor
+            The sensor.
+        """
         return self.sensor
 
-    def get_position(self):
+    def get_position(self) -> NDArray[np.float64]:
+        """
+        Gets the position of the agent.
+
+        Returns
+        -------
+        position : NDArray[np.float64]
+            The position of the agent.
+        """
         return self.position
 
-    def set_position(self, position):
+    def set_position(self, position: NDArray[np.float64]):
+        """
+        Sets the position of the agent.
+
+        Parameters
+        ----------
+        position : NDArray[np.float64]
+            The position.
+        """
         self.position = position
-
-

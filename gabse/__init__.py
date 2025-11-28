@@ -10,13 +10,11 @@ __name__ = "gabse"
 __author__ = "Carl Toller Melén"
 __version__ = "0.1.1"
 
-from gabse import engine
-from gabse.agent import Agent
-from gabse.data import Sensor, DataCollector
-from gabse.schedule import Action, Schedule
 from gabse.engine import Engine
-
+from gabse.agent import Agent
+from gabse.schedule import Action, Schedule
 from gabse.context import Context
+from gabse.data import Sensor, DataCollector
 
 __all__ = [
     "Engine",

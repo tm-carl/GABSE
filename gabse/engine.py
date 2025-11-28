@@ -1,27 +1,20 @@
 """
-@author: Carl Toller Melén
-
+This module contains the simulation engine class.
 """
-import numpy as np
-from gabse import schedule
 
-import gabse
 # %%
 # Import required packages
-from gabse.schedule import Schedule
+import numpy as np
 from gabse.context import Context
+from gabse.schedule import Schedule
 from numpy.typing import NDArray
 
 
 # %%
-# Engine class for managing the simulation
-
 class Engine:
     """
-    A class for managing the simulation engine.
-
-    Notes
-    -----
+    A class for managing the simulation engine. The engine is the main executor for the simulation and container for the
+    context. The simulation is executed using the *run()* method.
 
     Parameters
     ----------
@@ -29,9 +22,9 @@ class Engine:
         The total time for which the simulation will run.
     dimensions : NDArray[np.float64]
         The dimensions of the simulation environment, based on 3D representation. The order of XYZ boundaries is done
-        the following: [X-min, Y-min, Z-min, X-max, Y-max, Z-max]
-    context : Context
-        The context containing the agents and environment of the simulation.
+        the following: *[X-min, Y-min, Z-min, X-max, Y-max, Z-max]*
+    context : Context, optional
+        The context to be used, if custom. Default is to use the built-in context.
 
     Attributes
     ----------
@@ -47,7 +40,9 @@ class Engine:
         The schedule managing the actions to be executed.
     """
 
-    def __init__(self, modelTime: float, dimensions: NDArray[np.float64], context: Context = None):
+    def __init__(
+        self, modelTime: float, dimensions: NDArray[np.float64], context: Context = None
+    ):
         self.tick = 0.0
         self.modelTime = modelTime
         self.schedule = Schedule(self.tick)
@@ -75,18 +70,6 @@ class Engine:
         """
         self.schedule.clear_schedule()
         print(f"Stopped at: {self.tick}")
-
-    def get_tick(self) -> float:
-        """
-        Get the current tick in the simulation.
-
-        Returns
-        -------
-        tick : float
-            The current simulation tick.
-
-        """
-        return self.tick
 
     def get_context(self) -> Context:
         """

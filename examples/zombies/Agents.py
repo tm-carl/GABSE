@@ -1,6 +1,8 @@
-from gabse import context
+# %%
+# Import of packages
 import numpy as np
 import gabse
+
 
 class Person(gabse.Agent):
     def __init__(self, speed, engine, position=np.array([0, 0, 0])):
@@ -15,11 +17,20 @@ class Person(gabse.Agent):
 
         getters = ["position", "alive"]
 
-        a = gabse.Action(self.engine.get_tick() + 1, sensor, "entry", getters, np.iinfo(np.int32).max, sensor.get_frequency())
+        a = gabse.Action(
+            self.engine.schedule.get_tick() + 1,
+            sensor,
+            "entry",
+            getters,
+            np.iinfo(np.int32).max,
+            sensor.get_frequency(),
+        )
         self.engine.schedule.schedule_action(a)
 
     def get_zombies(self):
-        zombies = filter(lambda x: x.__class__.__name__ == "Zombie", self.engine.context.get_agents())
+        zombies = filter(
+            lambda x: x.__class__.__name__ == "Zombie", self.engine.context.get_agents()
+        )
         return list(zombies)
 
     def find_closest_zombie(self):
@@ -67,20 +78,32 @@ class Zombie(gabse.Agent):
         self.add_sensor(sensor)
         getters = ["position"]
 
-        a = gabse.Action(engine.get_tick() + 1, sensor, "entry", getters, np.iinfo(np.int32).max, sensor.get_frequency())
+        a = gabse.Action(
+            engine.schedule.get_tick() + 1,
+            sensor,
+            "entry",
+            getters,
+            np.iinfo(np.int32).max,
+            sensor.get_frequency(),
+        )
         self.engine.schedule.schedule_action(a)
 
     def get_persons(self):
-        p = filter(lambda x: x.__class__.__name__ == "Person", self.engine.context.get_agents())
+        p = filter(
+            lambda x: x.__class__.__name__ == "Person", self.engine.context.get_agents()
+        )
 
         return list(filter(lambda x: x.get_alive(), p))
 
-    def find_closest_person(self):
-        closestPerson = self.find_neighbours(self.get_persons(), 1)
-        return closestPerson
+    def find_closest_persons(self, noOfNeighbours: int = 1) -> list | Person:
+        closestPerson = self.find_neighbours(self.get_persons(), noOfNeighbours)
+        if noOfNeighbours == 1:
+            return closestPerson
+        else:
+            return list(closestPerson)
 
     def hunt(self):
-        ngh = self.find_closest_person()[0]
+        ngh = self.find_closest_persons()
 
         # Check if all people are dead
         if ngh == "":
@@ -109,7 +132,9 @@ class Zombie(gabse.Agent):
     def kill(self, victim):
         newZombie = Zombie(self.speed, self.engine, victim.get_position())
         self.engine.context.add_agent(newZombie)
-        a = gabse.Action(self.engine.get_tick() + 1, newZombie, "hunt", "", 10, 1)
+        a = gabse.Action(
+            self.engine.schedule.get_tick() + 1, newZombie, "hunt", "", 10, 1
+        )
         self.engine.schedule.schedule_action(a)
 
         victim.set_alive(False)
@@ -117,7 +142,7 @@ class Zombie(gabse.Agent):
         self.engine.schedule.remove_agent_from_list(victim)
         self.engine.schedule.remove_agent_from_list(sensor)
 
-        agents = ["Zombie", "Person"]
+        # agents = ["Zombie", "Person"]
         counts = self.get_persons()
 
         if len(counts) == 0:
@@ -127,13 +152,21 @@ class Zombie(gabse.Agent):
     def get_speed(self):
         return self.speed
 
+
 class Logger(gabse.Agent):
     def __init__(self, engine, position=np.array([0, 0, 0])):
         super().__init__(engine, position)
         sensor = gabse.Sensor(engine, self, 1.0)
         self.add_sensor(sensor)
 
-        a = gabse.Action(engine.get_tick() + 1, sensor, "entry", ["agent_counts"], np.iinfo(np.int32).max, sensor.get_frequency())
+        a = gabse.Action(
+            engine.schedule.get_tick() + 1,
+            sensor,
+            "entry",
+            ["agent_counts"],
+            np.iinfo(np.int32).max,
+            sensor.get_frequency(),
+        )
         self.engine.schedule.schedule_action(a)
 
     def get_agent_counts(self):
