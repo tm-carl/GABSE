@@ -1,9 +1,10 @@
 /dist/
+/archive/
 /.idea/
 /.venv/
 __pycache__/
 /examples/zombies/__pycache__/
-/gabse.egg-info/
+/src/gabse.egg-info/
 /notes.ipynb
 .pre-commit-cofig.yaml
 /.pypirc

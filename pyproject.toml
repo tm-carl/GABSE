@@ -1,15 +1,15 @@
 # toml
 [build-system]
-requires = ["setuptools>=64.0"]
+requires = ["setuptools>=64.0", "wheel", "build"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "gabse"
-version = "0.1.2"
+dynamic = ["version"]
 description = "The GABSE (Generic Agent-Based Simulation for Engineering) framework"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
+license = { file = "LICENSE" }
 authors = [
   { name = "Carl Toller Melén", email = "carl@tollermelen.se" },
 ]
@@ -26,7 +26,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering :: Simulation",
+    "Topic :: Scientific/Engineering",
 ]
 
 dependencies = [
@@ -41,7 +41,13 @@ Homepage = "https://github.com/tm-carl/GABSE"
 Repository = "https://github.com/tm-carl/GABSE"
 Issues = "https://github.com/tm-carl/GABSE/issues"
 
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+
 [tool.setuptools.packages.find]
+where =["src"]
 include = ["gabse"]
 
 [tool.setuptools.dynamic]
