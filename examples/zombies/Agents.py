@@ -1,7 +1,7 @@
 # %%
 # Import of packages
 import numpy as np
-import gabse
+from src import gabse
 
 
 class Person(gabse.Agent):

@@ -9,8 +9,8 @@ import copy
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gabse.engine import Engine
-    from gabse.agent import Agent
+    from src.gabse.engine import Engine
+    from src.gabse.agent import Agent
 
 
 # %%

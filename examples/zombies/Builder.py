@@ -7,7 +7,7 @@ Created on Mon Oct 27 10:46:12 2025
 
 # %%
 # Import required packages
-import gabse
+from src import gabse
 import Agents  # Agents module containing Person and Zombie classes
 import numpy as np
 

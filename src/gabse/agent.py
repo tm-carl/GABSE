@@ -7,7 +7,7 @@ from typing import Any
 # %%
 # Import required packages
 import numpy as np
-from gabse.data import Sensor
+from src.gabse.data import Sensor
 from numpy import floating
 from numpy.typing import NDArray
 from scipy.spatial import cKDTree as _cKDTree
@@ -16,7 +16,7 @@ from scipy.spatial import cKDTree as _cKDTree
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gabse.engine import Engine
+    from src.gabse.engine import Engine
 
 
 # %%
