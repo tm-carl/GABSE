@@ -7,7 +7,7 @@ This module contains the simulation context class.
 import numpy as np
 from numpy.typing import NDArray
 
-from src.gabse.agent import Agent
+from .agent import Agent
 
 
 # %%

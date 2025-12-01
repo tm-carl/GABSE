@@ -8,7 +8,7 @@ from sortedcontainers import SortedList
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.gabse.agent import Agent
+    from .agent import Agent
 
 
 # %%

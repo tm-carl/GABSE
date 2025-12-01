@@ -5,8 +5,8 @@ This module contains the simulation engine class.
 # %%
 # Import required packages
 import numpy as np
-from src.gabse.context import Context
-from src.gabse.schedule import Schedule
+from .context import Context
+from .schedule import Schedule
 from numpy.typing import NDArray
 
 
