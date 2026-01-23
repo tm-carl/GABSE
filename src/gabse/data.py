@@ -71,16 +71,10 @@ class Sensor:
             data = method()
             # check if data is numpy array and convert to list
             if isinstance(data, np.ndarray):
-                data = (
-                    data.tolist()
-                )  # to avoid reference issues with mutable data types
+                data = (data.tolist())  # to avoid reference issues with mutable data types
             else:
-                try:
-                    data = copy.copy(
-                        data
-                    )  # to avoid reference issues with mutable data types
-                except Exception:
-                    pass
+                data = copy.copy(data)  # to avoid reference issues with mutable data types
+
 
             entry[arg] = data
 

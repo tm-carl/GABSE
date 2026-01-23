@@ -2,6 +2,7 @@
 This module contains the simulation engine class.
 """
 
+
 # %%
 # Import required packages
 import numpy as np
@@ -34,8 +35,8 @@ class Engine:
         The total time for which the simulation will run.
     dimensions : NDArray[np.float64]
         The dimensions of the simulation environment.
-    context : Context
-        The context containing the agents and environment of the simulation.
+    context : Context | Any
+        The context containing the agents and environment of the simulation. Can also be a child class of Context class.
     schedule : Schedule
         The schedule managing the actions to be executed.
     """

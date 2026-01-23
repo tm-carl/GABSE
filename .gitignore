@@ -7,7 +7,6 @@ __pycache__/
 /src/gabse.egg-info/
 /notes.ipynb
 .pre-commit-cofig.yaml
-/.pypirc
 /conf.py
 /index.rst
 /make.bat

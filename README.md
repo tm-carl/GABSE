@@ -19,6 +19,13 @@ Uninstall:
 pip uninstall gabse
 ```
 
+You can find the GABSE at both PyPi and TestPyPi using these links:
+
+```
+https://pypi.org/project/gabse/
+https://test.pypi.org/project/gabse/
+```
+
 ### Dependencies
 GABSE has the following dependencies
 - sortedcontainers

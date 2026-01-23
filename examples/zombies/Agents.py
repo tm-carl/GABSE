@@ -13,7 +13,7 @@ class Person(gabse.Agent):
 
         freq = 10.0
         sensor = gabse.Sensor(engine, self, freq)
-        self.add_sensor(sensor)
+        self.set_sensor(sensor)
 
         getters = ["position", "alive"]
 
@@ -75,7 +75,7 @@ class Zombie(gabse.Agent):
         freq = 10.0
         sensor = gabse.Sensor(engine, self, freq)
 
-        self.add_sensor(sensor)
+        self.set_sensor(sensor)
         getters = ["position"]
 
         a = gabse.Action(
@@ -157,7 +157,7 @@ class Logger(gabse.Agent):
     def __init__(self, engine, position=np.array([0, 0, 0])):
         super().__init__(engine, position)
         sensor = gabse.Sensor(engine, self, 1.0)
-        self.add_sensor(sensor)
+        self.set_sensor(sensor)
 
         a = gabse.Action(
             engine.schedule.get_tick() + 1,

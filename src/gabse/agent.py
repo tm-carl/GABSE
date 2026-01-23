@@ -53,26 +53,26 @@ class Agent:
     _id_counter = 0
 
     # Initialize agent with unique ID, position, engine reference, and empty sensor
-    def __init__(self, engine: "Engine", position: NDArray[np.float64] = None):
+    def __init__(self, engine: "Engine", position: NDArray[np.float64] = None, sensor: Sensor = None):
         Agent._id_counter += 1
         self.id = Agent._id_counter
         if position is None:
             position = np.array([0, 0, 0])
         self.engine = engine
         self.position = position
-        self.sensor = None
+        self.sensor = sensor
 
     def find_neighbours(self, agents: list, noOfNeighbours: int) -> list | Any:
         """
-        Calculates the distance between *self* and a list of *agents*, neighbours, based on Euclidean distance. It then
-        filters out based on the number of neighbours to include, minimum one.
+        Calculates the distance between *self* and a list of *agents*, neighbors, based on Euclidean distance. It then
+        filters out based on the number of neighbors to include, minimum one.
 
         Parameters
         ----------
         agents : list
             A list of agents for which to calculate distance with.
         noOfNeighbours : int
-            The number of closest neighbours to include.
+            The number of closest neighbors to include.
 
         Returns
         -------
@@ -110,7 +110,7 @@ class Agent:
             # compute squared Euclidean distances
             d2 = np.sum((pos - self_pos) ** 2, axis=1)
 
-            # Return based if only one neighbours requested
+            # Return based if only one neighbors requested
             if k == 1:
                 return agents[int(np.argmin(d2))]
             if k < n:
@@ -197,7 +197,7 @@ class Agent:
     #    pass
 
     # Add sensor to agent
-    def add_sensor(self, sensor: Sensor):
+    def set_sensor(self, sensor: Sensor):
         """
         Adds a sensor to the agent.
 
