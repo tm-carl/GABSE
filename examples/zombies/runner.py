@@ -6,8 +6,11 @@ import Builder
 
 tic = time.perf_counter()
 
+print("Starting simulation...")
 b = Builder.Builder()
+print("Builder created. Running simulation...")
 b.engine.run()
+print("Simulation run completed. Collecting data...")
 b.dataLogger.collect_data()
 repo = b.dataLogger.export_data()
 

@@ -34,8 +34,13 @@ class Agent:
     ----------
     engine : Engine
         Reference to the simulation engine.
-    position : NDArray[np.float64]
-        The 3D position of the agent in the simulation space.
+    position : NDArray[np.float64], optional
+        The 3D position of the agent in the simulation space. Default is [0, 0, 0].
+    orientation : NDArray[np.float64], optional
+        The 3D orientation of the agent in the simulation space. Default is [0, 0, 0].
+    sensor : Sensor, optional
+        The sensor associated with the agent. Default is None.
+
 
     Attributes
     ----------
@@ -53,13 +58,17 @@ class Agent:
     _id_counter = 0
 
     # Initialize agent with unique ID, position, engine reference, and empty sensor
-    def __init__(self, engine: "Engine", position: NDArray[np.float64] = None, sensor: Sensor = None):
+    def __init__(self,
+                 engine: "Engine",
+                 position: NDArray[np.float64] = np.array([0,0,0]),
+                 orientation: NDArray[np.float64] = np.array([0, 0, 0]),
+                 sensor: Sensor = None
+                 ):
         Agent._id_counter += 1
         self.id = Agent._id_counter
-        if position is None:
-            position = np.array([0, 0, 0])
         self.engine = engine
         self.position = position
+        self.orientation = orientation
         self.sensor = sensor
 
     def find_neighbours(self, agents: list, noOfNeighbours: int) -> list | Any:
@@ -137,37 +146,48 @@ class Agent:
 
         return np.clip(self.position, minValues, maxValues)
 
-    def move_position(self, position: NDArray[np.float64]):
+    def move_position(self, position: NDArray[np.float64], orientation: NDArray[np.float64] = None):
         """
-        Moves the agent to a new position. It also does a check so that the agent is still within the bounds of the context.
+        Moves the agent to a new position and orientation, optional. It also does a check so that the agent
+        is still within the bounds of the context.
 
         Parameters
         ----------
         position : NDArray[np.float64]
             The new position where the agent it to be placed.
+        orientation : NDArray[np.float64], optional
+            The new orientation of the agent.
         """
         self.position = position
         self.position = self.check_out_of_bounds()
         # print(self.position)
+
+        if orientation is not None:
+            self.orientation = orientation
 
         try:
             self.engine.context.mark_dirty()
         except Exception:
             pass
 
-    def move_vector(self, vector: NDArray[np.float64]):
+    def move_vector(self, move_vector: NDArray[np.float64], rotation_vector: NDArray[np.float64] = None):
         """
-        Moves the agent to a new position based on a move vector. It also does a check so that the agent is still
-        within the bounds of the context.
+        Moves and rotates the agent to a new position based on a move vector and a rotation vector, optional.
+        It also does a check so that the agent is still within the bounds of the context.
 
         Parameters
         ----------
-        vector : NDArray[np.float64]
+        move_vector : NDArray[np.float64]
             The movement vector.
+        rotation_vector : NDArray[np.float64], optional
+            The rotation vector.
         """
-        self.position += vector
+        self.position += move_vector
         self.position = self.check_out_of_bounds()
         # print(self.position)
+
+        if rotation_vector is not None:
+            self.orientation += rotation_vector
 
         try:
             self.engine.context.mark_dirty()
@@ -193,10 +213,18 @@ class Agent:
         """
         return np.linalg.norm(self.get_position() - agent2.get_position())
 
-    # def find_shortest_path(self, network):
-    #    pass
+    # Getters and Setters
+    def get_id(self) -> int:
+        """
+        Gets the unique identifier of the agent.
 
-    # Add sensor to agent
+        Returns
+        -------
+        id : int
+            The unique identifier.
+        """
+        return self.id
+
     def set_sensor(self, sensor: Sensor):
         """
         Adds a sensor to the agent.
@@ -208,7 +236,7 @@ class Agent:
         """
         self.sensor = sensor
 
-    # Getters and Setters
+
     def get_sensor(self) -> Sensor:
         """
         Gets a sensor from the agent.
@@ -241,3 +269,25 @@ class Agent:
             The position.
         """
         self.position = position
+
+    def get_orientation(self) -> NDArray[np.float64]:
+        """
+        Gets the orientation of the agent.
+
+        Returns
+        -------
+        orientation : NDArray[np.float64]
+            The rotation of the agent.
+        """
+        return self.orientation
+
+    def set_orientation(self, orientation: NDArray[np.float64]):
+        """
+        Sets the orientation of the agent.
+
+        Parameters
+        ----------
+        orientation : NDArray[np.float64]
+            The orientation.
+        """
+        self.orientation = orientation

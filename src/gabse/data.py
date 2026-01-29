@@ -78,8 +78,22 @@ class Sensor:
 
             entry[arg] = data
 
-        self.logger.append(entry)
+        self.logger.extend(entry)
         # print(self.engine.getTick())
+
+    def merge_logger(self, other_logger: list):
+        """
+        Merges another logger into this sensor's logger and sorts the combined log by tick.
+
+        Parameters
+        ----------
+        other_logger : list
+            The logger to be merged.
+        """
+        self.logger.extend(other_logger)
+
+        # Sort the logger by tick to maintain chronological order
+        self.logger.sort(key=lambda x: x['tick'])
 
     # Getters
     def get_frequency(self) -> float:
