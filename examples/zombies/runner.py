@@ -2,25 +2,42 @@
 # Main script to run the simulation
 import time
 import json
+import os
 import Builder
 
+#%%
 tic = time.perf_counter()
 
+model_time=10000.0
+person_quantity=10
+person_speed=1
+zombie_quantity=1
+zombie_speed=1
+
 print("Starting simulation...")
-b = Builder.Builder()
+b = Builder.Builder(model_time, person_quantity, person_speed, zombie_quantity, zombie_speed)
 print("Builder created. Running simulation...")
-b.engine.run()
-print("Simulation run completed. Collecting data...")
-b.dataLogger.collect_data()
-repo = b.dataLogger.export_data()
+(kpi, repo) = b.engine.run(2)
+print("Simulation run completed. Exporting data...")
+
+print("KPIs collected:")
+for k, v in kpi.items():
+    print(f"{k}: {v}")
 
 toc = time.perf_counter()
 print(f"Simulation completed in {toc - tic:0.4f} seconds")
 
-# save repo to json file
-with open("zombie_simulation_data.json", "w") as f:
+# save repo to json file with warning if file already exists
+file_path = "zombie_simulation_data.json"
+if os.path.exists(file_path):
+    print(f"Warning: {file_path} already exists and will be overwritten.")
+
+# Write repo to JSON file with indentation
+with open(file_path, "w") as f:
     json.dump(repo, f, indent=4)
 
+#with open("zombie_simulation_data.json", "w") as f:
+#    json.dump(repo, f, indent=4)
 
 # %%
 

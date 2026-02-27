@@ -7,9 +7,10 @@ Created on Mon Oct 27 10:46:12 2025
 
 # %%
 # Import required packages
-from src import gabse
-import Agents  # Agents module containing Person and Zombie classes
 import numpy as np
+
+# Note: imports that depend on the project `src` directory are done inside methods.
+# This avoids import errors when worker processes spawn without PYTHONPATH set.
 
 
 # %%
@@ -17,29 +18,37 @@ import numpy as np
 
 
 class Builder:
-    def __init__(self):
+    def __init__(self, model_time=10000.0, person_quantity=100, person_speed=1, zombie_quantity=1, zombie_speed=1):
         # Simulation parameters
-        self.modelTime = 10000.0
-        self.personNum = 100
-        self.personSpeed = 1
-        self.zombieNum = 1
-        self.zombieSpeed = 1
+        self.model_time = model_time
+        self.person_quantity = person_quantity
+        self.person_speed = person_speed
+        self.zombie_quantity = zombie_quantity
+        self.zombie_speed = zombie_speed
         self.dimensions = np.array([-100.0, -100.0, 1.0, 100.0, 100.0, 1.0])
 
         # Initialize the simulation engine and context
-        self.engine = gabse.Engine(self.modelTime, self.dimensions)
+        # Use the installed or local `gabse` package - runner sets PYTHONPATH to the repo `src` directory.
+        import src.gabse as gabse
+
+        self.engine = gabse.Engine(self.model_time, self.dimensions)
         self.context = self.engine.get_context()
-        self.dataLogger = gabse.DataCollector(self.engine)
+
+        # Set up the simulation context with agents
+        # Import gabse using the environment (runner inserts repo/src into sys.path)
+        import gabse
 
         # Set up the simulation context with agents
         self.populate_context()
 
     # Method to set up the simulation context with agents
     def populate_context(self):
+        import gabse
+
         low = self.dimensions[0:3]
         high = self.dimensions[3:]
 
-        for i in range(self.personNum):
+        for i in range(self.person_quantity):
             startPos = np.array(
                 [
                     low_entry
@@ -50,13 +59,16 @@ class Builder:
                 dtype="f",
             )
 
-            p = Agents.Person(self.personSpeed, self.engine, startPos)
+            # import Agents locally so module resolution uses the runner's sys.path setup
+            import Agents
+
+            p = Agents.Person(self.person_speed, self.engine, startPos)
             self.context.add_agent(p)
 
             a = gabse.Action(1, p, "run", interval=1.0)
             self.engine.schedule.schedule_action(a)
 
-        for i in range(self.zombieNum):
+        for i in range(self.zombie_quantity):
             startPos = np.array(
                 [
                     low_entry
@@ -66,7 +78,7 @@ class Builder:
                 ],
                 dtype="f",
             )
-            z = Agents.Zombie(self.zombieSpeed, self.engine, startPos)
+            z = Agents.Zombie(self.zombie_speed, self.engine, startPos)
             self.context.add_agent(z)
 
             a = gabse.Action(1, z, "hunt", priority=10, interval=1.0)

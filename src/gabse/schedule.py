@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .agent import Agent
+    from .data import Sensor
 
 
 # %%
@@ -38,8 +39,8 @@ class Action:
     ----------
     tick: float
         The simulation tick at which the action is scheduled to occur.
-    agent: Agent
-        The agent that will perform the action.
+    agent: Agent | Sensor
+        The agent or sensor that will perform the action.
     method: str
         The name of the method to be called on the agent.
     args: list, optional
@@ -54,7 +55,7 @@ class Action:
     def __init__(
         self,
         tick: float,
-        agent: "Agent",
+        agent: "Agent | Sensor",
         method: str,
         args: list = None,
         priority: int = 0,

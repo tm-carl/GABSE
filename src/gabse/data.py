@@ -6,11 +6,12 @@ This module contains the operational data classes.
 # Import required packages
 import numpy as np
 import copy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .engine import Engine
     from .agent import Agent
+    from .context import Context
 
 
 # %%
@@ -34,17 +35,17 @@ class Sensor:
         Reference to the simulation engine.
     parent : Agent
         The agent to which the sensor is attached.
-    logger : list
-        A list to store logged data entries.
+    logger : dict
+        A dictionary to store logged data entries with the tick as the key and the data entry as the value.
     frequency : float
         The frequency at which the sensor logs data.
     """
 
     # Initializes the sensor with engine reference, parent agent, empty logger, and frequency
-    def __init__(self, engine: "Engine", parent: "Agent", frequency: float):
+    def __init__(self, engine: "Engine", parent: "Agent | Context", frequency: float):
         self.engine = engine
         self.parent = parent
-        self.logger = list()
+        self.logger = dict()
         self.frequency = frequency
 
     # Logs data entries based on specified getters
@@ -69,6 +70,7 @@ class Sensor:
                     continue
 
             data = method()
+            #print(data)
             # check if data is numpy array and convert to list
             if isinstance(data, np.ndarray):
                 data = (data.tolist())  # to avoid reference issues with mutable data types
@@ -78,22 +80,22 @@ class Sensor:
 
             entry[arg] = data
 
-        self.logger.extend(entry)
+        self.logger[self.engine.schedule.get_tick()] = entry
         # print(self.engine.getTick())
 
-    def merge_logger(self, other_logger: list):
+    def merge_logger(self, other_logger: dict):
         """
         Merges another logger into this sensor's logger and sorts the combined log by tick.
 
         Parameters
         ----------
-        other_logger : list
+        other_logger : dict
             The logger to be merged.
         """
-        self.logger.extend(other_logger)
+        self.logger |= other_logger
 
         # Sort the logger by tick to maintain chronological order
-        self.logger.sort(key=lambda x: x['tick'])
+        self.logger = dict(sorted(self.logger.items()))
 
     # Getters
     def get_frequency(self) -> float:
@@ -107,13 +109,13 @@ class Sensor:
         """
         return self.frequency
 
-    def get_logger(self) -> list:
+    def get_logger(self) -> dict:
         """
         Returns the data log associated to the sensor.
 
         Returns
         -------
-        logger : list
+        logger : dict
             The data log.
         """
         return self.logger
@@ -141,11 +143,33 @@ class DataCollector:
     def __init__(self, engine):
         self.engine = engine
         self.repo = dict()
+        self.kpi = dict()
+
+    def store_log(self, agent):
+        """
+        Stores the entire log of a specific agent in the repository.
+
+        Parameters
+        ----------
+        agent : Agent
+            The agent whose log is to be stored.
+        """
+
+        self.repo[f"{agent.__class__.__name__} {agent.id}"] = (
+            agent.get_sensor().get_logger()
+        )
 
     def collect_data(self):
         """
-        Collects data from all agents' sensors and stores it in the repository.
+        Collects data from all agents' sensors and stores it in the repository. This method iterates through all
+        agents in the simulation context, retrieves their logs from their sensors, and stores them in the repository
+        with a key that combines the agent's class name and ID.
+
+        Noteworthy, the collection collects logs from agents listed in the context, but does not collect logs from
+        the context itself. If there is a wish to store contextual data as a log, then the recommended way is to create
+        a context logger agent that collects the contextual data and stores it in its sensor log.
         """
+
         for agt in self.engine.context.get_agents():
             self.repo[f"{agt.__class__.__name__} {agt.id}"] = (
                 agt.get_sensor().get_logger()
@@ -164,3 +188,53 @@ class DataCollector:
 
         """
         return self.repo
+
+    def collect_kpis(self):
+        """
+        Collects a key performance indicators (KPIs) and stores it in the KPI repository.
+        """
+
+        # Gets the total model time
+        self.kpi["model_time"] = self.engine.tick
+
+        c = self.engine.context
+        c_kpi = dict()
+        # Search for "get_kpis" method in the context and call it if exists
+        method = getattr(c, "get_kpis", None)
+        if callable(method):
+            kpis = method()
+            if isinstance(kpis, dict):
+                c_kpi |= kpis
+            else:
+                print("get_kpis method found in context but did not return a dictionary.")
+
+
+        self.kpi |= c_kpi
+
+        # Search for "get_kpis" method in the agents and call it if exists
+        for agt in self.engine.context.get_agents():
+            agt_kpi = dict()
+            method = getattr(agt, "get_kpis", None)
+            if callable(method):
+                kpis = method()
+                if isinstance(kpis, dict):
+                    agt_kpi |= kpis
+                else:
+                    print(f"get_kpis method found in {agt} but did not return a dictionary.")
+
+                self.kpi[f"{agt.__class__.__name__} {agt.id}"] = agt_kpi
+
+
+
+
+    def export_kpis(self):
+        """
+        Exports the collected KPIs.
+
+        Returns
+        -------
+        kpi:dict
+            The KPI repository.
+
+        """
+        return self.kpi

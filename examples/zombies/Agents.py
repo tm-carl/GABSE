@@ -1,7 +1,7 @@
 # %%
 # Import of packages
 import numpy as np
-from src import gabse
+import src.gabse as gabse
 
 
 class Person(gabse.Agent):
@@ -12,18 +12,17 @@ class Person(gabse.Agent):
         super().__init__(engine, position)
 
         freq = 10.0
-        sensor = gabse.Sensor(engine, self, freq)
-        self.set_sensor(sensor)
+        self.sensor = gabse.Sensor(engine, self, freq)
 
         getters = ["position", "alive"]
 
         a = gabse.Action(
             self.engine.schedule.get_tick() + 1,
-            sensor,
+            self.sensor,
             "entry",
             getters,
             np.iinfo(np.int32).max,
-            sensor.get_frequency(),
+            self.sensor.get_frequency(),
         )
         self.engine.schedule.schedule_action(a)
 
@@ -73,18 +72,16 @@ class Zombie(gabse.Agent):
         super().__init__(engine, position)
 
         freq = 10.0
-        sensor = gabse.Sensor(engine, self, freq)
-
-        self.set_sensor(sensor)
+        self.sensor = gabse.Sensor(engine, self, freq)
         getters = ["position"]
 
         a = gabse.Action(
             engine.schedule.get_tick() + 1,
-            sensor,
+            self.sensor,
             "entry",
             getters,
             np.iinfo(np.int32).max,
-            sensor.get_frequency(),
+            self.sensor.get_frequency(),
         )
         self.engine.schedule.schedule_action(a)
 
@@ -138,15 +135,20 @@ class Zombie(gabse.Agent):
         self.engine.schedule.schedule_action(a)
 
         victim.set_alive(False)
+        victim.sensor.entry("position", "alive")
+        self.engine.data_logger.store_log(victim)
         sensor = victim.get_sensor()
+
         self.engine.schedule.remove_agent_from_list(victim)
         self.engine.schedule.remove_agent_from_list(sensor)
+
+        self.engine.context.remove_agent(victim)
 
         # agents = ["Zombie", "Person"]
         counts = self.get_persons()
 
         if len(counts) == 0:
-            print("The world is lost... everyone is a zombie")
+            #print("The world is lost... everyone is a zombie")
             self.engine.abort()
 
     def get_speed(self):
@@ -170,4 +172,36 @@ class Logger(gabse.Agent):
         self.engine.schedule.schedule_action(a)
 
     def get_agent_counts(self):
-        return self.engine.context.get_agent_count()
+        counts = dict()
+
+        counts["Person"] = self.engine.context.get_agent_count(["Person"])["Person"]
+        counts["Zombie"] = self.engine.context.get_agent_count(["Zombie"])["Zombie"]
+
+        return counts
+
+    def get_kpis(self):
+        # Calculate the kill rate based on the number of zombies and people in the context at start and current time
+        # The initial number of people is stored in the sensor logger when the Logger agent is initialized
+        # Gets the initial counts from the sensor logger
+        first_key = next(iter(self.sensor.get_logger()))
+        init_person_count = self.get_sensor().logger.get(first_key).get("agent_counts")["Person"]
+        init_zombie_count = self.get_sensor().logger.get(first_key).get("agent_counts")["Zombie"]
+
+        # Gets the current counts from the context
+        last_key = next(reversed(self.sensor.get_logger()))
+        curr_person_count = self.get_sensor().logger.get(last_key).get("agent_counts")["Person"]
+        curr_zombie_count = self.get_sensor().logger.get(last_key).get("agent_counts")["Zombie"]
+
+        # Calculate the kill rate as the change in zombie count divided by the change in person count, multiplied by 100 to get a percentage
+        if init_person_count - curr_person_count == 0:
+            kill_ratio = 0.0
+        else:
+            kill_ratio = ((curr_zombie_count - init_zombie_count) / (init_person_count - curr_person_count)) * 100
+
+
+        return {
+            "person_count": self.engine.context.get_agent_count(["Person"])["Person"],
+            "zombie_count": self.engine.context.get_agent_count(["Zombie"])["Zombie"],
+            "kill_ratio": kill_ratio,
+            "kill_rate": round((curr_zombie_count - init_zombie_count) / self.engine.schedule.get_tick(), 4)
+        }

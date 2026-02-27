@@ -8,6 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .agent import Agent
+from .data import Sensor
 
 
 # %%
@@ -28,11 +29,11 @@ class Context:
         A list of agents present in the simulation.
 
     """
-
     # Initializes the context with dimensions and empty agent list
     def __init__(self, dimensions: NDArray[np.float64]):
         self._positions_cache = None
         self.dimensions = dimensions
+        self.grid = None
         self.agents = list()
         self._dirty = True
 
@@ -71,6 +72,23 @@ class Context:
             return True
         else:
             return False
+
+    def get_agents_positions(self):
+        """
+        Collects the positions of all agents in the context and returns them as a numpy array.
+
+        Returns
+        -------
+        positions : NDArray[np.float64]
+            A numpy array containing the positions of all agents.
+        """
+
+        repo = dict()
+
+        for agent in self.agents:
+            repo[agent.get_id()] = (agent.__class__.__name, agent.get_position())
+
+        return repo
 
     # Getters
     def get_agents(self) -> list:
