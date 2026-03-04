@@ -7,6 +7,7 @@ from typing import Any
 # %%
 # Import required packages
 import numpy as np
+import nanoid
 from .data import Sensor
 from numpy import floating
 from numpy.typing import NDArray
@@ -34,6 +35,8 @@ class Agent:
     ----------
     engine : Engine
         Reference to the simulation engine.
+    id : str, optional
+        Unique identifier for the agent. Default is to automatically generate a unique ID using nanoid with a size of 7.
     position : NDArray[np.float64], optional
         The 3D position of the agent in the simulation space. Default is [0, 0, 0].
     orientation : NDArray[np.float64], optional
@@ -44,8 +47,8 @@ class Agent:
 
     Attributes
     ----------
-    id: int
-        Unique identifier for the agent, automatically generated.
+    id: str
+        Unique identifier for the agent, either assigned or automatically generated using nanoid with a size 7.
     position: np.ndarray
         The 3D position of the agent in the simulation space.
     engine: Engine
@@ -55,17 +58,18 @@ class Agent:
     """
 
     # Static variable to keep track of agent IDs
-    _id_counter = 0
+    #_id_counter = 0
 
     # Initialize agent with unique ID, position, engine reference, and empty sensor
     def __init__(self,
                  engine: "Engine",
+                 id: str = nanoid.generate(size=7),
                  position: NDArray[np.float64] = np.array([0,0,0]),
                  orientation: NDArray[np.float64] = np.array([0, 0, 0]),
                  sensor: Sensor = None
                  ):
-        Agent._id_counter += 1
-        self.id = Agent._id_counter
+        #Agent._id_counter += 1
+        self.id = id
         self.engine = engine
         self.position = position
         self.orientation = orientation
