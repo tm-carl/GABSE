@@ -1,6 +1,7 @@
 """
 This module contains the simulation context class.
 """
+from typing import Any
 
 # %%
 # Import required packages
@@ -117,6 +118,26 @@ class Context:
             A list of agents.
         """
         return [agent for agent in self.agents if self.check_class(agent, class_name)]
+
+    def get_agent_by_id(self, agent_id: str) -> Any | None:
+        """
+        Gets an agent by its unique identifier.
+
+        Parameters
+        ----------
+        agent_id : str
+            The unique identifier of the agent.
+
+        Returns
+        -------
+        agent : Agent
+            The agent with the specified unique identifier, or None if not found.
+        """
+
+        for agent in self.agents:
+            if agent.id == agent_id:
+                return agent
+        return None
 
     def get_dimensions(self) -> NDArray[np.float64]:
         """
