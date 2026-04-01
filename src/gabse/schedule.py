@@ -196,34 +196,12 @@ class Schedule:
             key=lambda action: (action.tick, action.priority),
         )
 
-    def get_schedule(self) -> SortedList:
-        """
-        Gets the schedule.
-
-        Returns
-        -------
-        schedule: SortedList
-            The schedule.
-        """
-        return self.schedule
-
     def print_schedule(self):
         """
         Prints all actions in the schedule.
         """
         for action in self.schedule:
             print(action)
-
-    def get_tick(self) -> float:
-        """
-        Gets the current tick in the schedule.
-
-        Returns
-        -------
-        tick : float
-            The current tick.
-        """
-        return self.tick
 
     def get_size(self) -> int:
         """

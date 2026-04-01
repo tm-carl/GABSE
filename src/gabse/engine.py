@@ -114,14 +114,3 @@ class Engine:
         """
         self.schedule.clear_schedule()
         #print(f"Stopped at: {self.tick}")
-
-    def get_context(self) -> Context:
-        """
-        Get the context connected to the simulation.
-
-        Returns
-        -------
-        context : Context
-            The simulation context.
-        """
-        return self.context

@@ -87,22 +87,11 @@ class Context:
         repo = dict()
 
         for agent in self.agents:
-            repo[agent.get_id()] = (agent.__class__.__name, agent.get_position())
+            repo[agent.id] = (agent.__class__.__name, agent.position)
 
         return repo
 
     # Getters
-    def get_agents(self) -> list:
-        """
-        Gets all agents in the context.
-
-        Returns
-        -------
-        agents : list
-            A list of agents.
-        """
-        return self.agents
-
     def get_agents_by_class(self, class_name: str) -> list:
         """
         Gets all agents of a specific class.
@@ -119,7 +108,7 @@ class Context:
         """
         return [agent for agent in self.agents if self.check_class(agent, class_name)]
 
-    def get_agent_by_id(self, agent_id: str) -> Any | None:
+    def get_agent_by_id(self, agent_id: str) -> Agent | None:
         """
         Gets an agent by its unique identifier.
 
@@ -134,21 +123,9 @@ class Context:
             The agent with the specified unique identifier, or None if not found.
         """
 
-        for agent in self.agents:
-            if agent.id == agent_id:
-                return agent
-        return None
+        return next((a for a in self.agents if a.id == agent_id), None)
 
-    def get_dimensions(self) -> NDArray[np.float64]:
-        """
-        Gets the dimensions of the context.
 
-        Returns
-        -------
-        dimensions : NDAArray[np.float64]
-            The dimensions.
-        """
-        return self.dimensions
 
     def get_positions_array(self):
         """
@@ -166,7 +143,7 @@ class Context:
             else:
                 # list comprehension into vstack once per rebuild
                 self._positions_cache = np.vstack(
-                    [a.get_position() for a in self.agents]
+                    [a.position for a in self.agents]
                 )
             self._dirty = False
         return self._positions_cache
@@ -182,24 +159,24 @@ class Context:
 
         Returns
         -------
-        counts : dict
+        count : dict
             A dictionary with each agent class and their count.
         """
-        entry = dict()
+        count = dict()
 
         # if no classes provided, return total count for each agent type
         if not classes:
             unique_classes = set(obj.__class__.__name__ for obj in self.agents)
             for cls in unique_classes:
                 a = sum(self.check_class(obj, cls) for obj in self.agents)
-                entry[cls] = a
-            return entry
+                count[cls] = a
+            return count
 
         for arg in classes:
             # print(arg)
             a = sum(self.check_class(obj, arg) for obj in self.agents)
             # print(a)
-            entry[arg] = a
+            count[arg] = a
 
-        # print(entry)
-        return entry
+        # print(count)
+        return count

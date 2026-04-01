@@ -2,7 +2,7 @@
 This module contains the simulation agent class.
 """
 
-from typing import Any
+from typing import Any, Sequence
 
 # %%
 # Import required packages
@@ -63,19 +63,36 @@ class Agent:
     # Initialize agent with unique ID, position, engine reference, and empty sensor
     def __init__(self,
                  engine: "Engine",
-                 id: str = nanoid.generate(size=7),
-                 position: NDArray[np.float64] = np.array([0,0,0]),
-                 orientation: NDArray[np.float64] = np.array([0, 0, 0]),
+                 id: str | None = None,
+                 position: NDArray[np.float64] | None = None,
+                 orientation: NDArray[np.float64] | None = None,
                  sensor: Sensor = None
                  ):
         #Agent._id_counter += 1
+        # Generate a unique id at instantiation time when not provided.
+        # (Avoid evaluating nanoid.generate at function-definition time which would
+        # produce the same default for every instance.)
+        if id is None:
+            id = nanoid.generate(size=7)
+
         self.id = id
         self.engine = engine
-        self.position = position
-        self.orientation = orientation
+
+        # Avoid using mutable objects as default arguments. Create fresh arrays
+        # per instance when position/orientation not provided.
+        if position is None:
+            self.position = np.array([0, 0, 0], dtype=float)
+        else:
+            self.position = position
+
+        if orientation is None:
+            self.orientation = np.array([0, 0, 0], dtype=float)
+        else:
+            self.orientation = orientation
+
         self.sensor = sensor
 
-    def find_neighbours(self, agents: list, noOfNeighbours: int) -> list | Any:
+    def find_neighbours(self, agents: Sequence["Agent"], noOfNeighbours: int) -> list | Any:
         """
         Calculates the distance between *self* and a list of *agents*, neighbors, based on Euclidean distance. It then
         filters out based on the number of neighbors to include, minimum one.
@@ -100,9 +117,9 @@ class Agent:
 
         # Try KDTree for large n or repeated queries
         try:
-            pos = np.vstack([a.get_position() for a in agents])
+            pos = np.vstack([a.position for a in agents])
             tree = _cKDTree(pos)
-            dists, idxs = tree.query(self.get_position(), k=k)
+            dists, idxs = tree.query(self.position, k=k)
             if k == 1:
                 return agents[int(idxs)]
             if np.isscalar(idxs):
@@ -112,7 +129,7 @@ class Agent:
             return [agents[i] for i in idxs]
         except Exception:
             # Get self position
-            self_pos = self.get_position()
+            self_pos = self.position
 
             # stack positions (shape: (n, dim)) and compute squared distances
             pos = self.engine.context.get_positions_array()
@@ -143,7 +160,7 @@ class Agent:
         position : NDArray[np.float64]
             The new position, unchanged if original position is within bounds.
         """
-        bounds = np.array(self.engine.context.get_dimensions())
+        bounds = np.array(self.engine.context.dimensions)
 
         minValues = bounds[0:3]
         maxValues = bounds[3:]
@@ -199,7 +216,7 @@ class Agent:
             pass
 
     # Calculate Euclidean distance between two agents
-    def get_distance(self, agent2: "Agent") -> floating[Any]:
+    def calculate_distance(self, agent2: "Agent") -> floating[Any]:
         """
         Calculates the Euclidean distance between two points.
 
@@ -215,83 +232,4 @@ class Agent:
         dist : floating[Any]
             The distance
         """
-        return np.linalg.norm(self.get_position() - agent2.get_position())
-
-    # Getters and Setters
-    def get_id(self) -> int:
-        """
-        Gets the unique identifier of the agent.
-
-        Returns
-        -------
-        id : int
-            The unique identifier.
-        """
-        return self.id
-
-    def set_sensor(self, sensor: Sensor):
-        """
-        Adds a sensor to the agent.
-
-        Parameters
-        ----------
-        sensor : Sensor
-            The sensor to be added.
-        """
-        self.sensor = sensor
-
-
-    def get_sensor(self) -> Sensor:
-        """
-        Gets a sensor from the agent.
-
-        Returns
-        -------
-        sensor : Sensor
-            The sensor.
-        """
-        return self.sensor
-
-    def get_position(self) -> NDArray[np.float64]:
-        """
-        Gets the position of the agent.
-
-        Returns
-        -------
-        position : NDArray[np.float64]
-            The position of the agent.
-        """
-        return self.position
-
-    def set_position(self, position: NDArray[np.float64]):
-        """
-        Sets the position of the agent.
-
-        Parameters
-        ----------
-        position : NDArray[np.float64]
-            The position.
-        """
-        self.position = position
-
-    def get_orientation(self) -> NDArray[np.float64]:
-        """
-        Gets the orientation of the agent.
-
-        Returns
-        -------
-        orientation : NDArray[np.float64]
-            The rotation of the agent.
-        """
-        return self.orientation
-
-    def set_orientation(self, orientation: NDArray[np.float64]):
-        """
-        Sets the orientation of the agent.
-
-        Parameters
-        ----------
-        orientation : NDArray[np.float64]
-            The orientation.
-        """
-        self.orientation = orientation
+        return np.linalg.norm(self.position - agent2.position)

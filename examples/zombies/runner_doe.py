@@ -23,7 +23,7 @@ import itertools
 
 levels = {
     "model_time": range(1000, 10000, 10000),
-    "person_quantity": range(10, 100, 100),
+    "person_quantity": range(10, 100, 10),
     "person_speed": range(1, 10, 1),
     "zombie_quantity": range(10, 100, 10),
     "zombie_speed": range(1, 10, 1)

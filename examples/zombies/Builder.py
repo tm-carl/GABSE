@@ -32,7 +32,7 @@ class Builder:
         import src.gabse as gabse
 
         self.engine = gabse.Engine(self.model_time, self.dimensions)
-        self.context = self.engine.get_context()
+        self.context = self.engine.context
 
         # Set up the simulation context with agents
         # Import gabse using the environment (runner inserts repo/src into sys.path)
@@ -88,7 +88,3 @@ class Builder:
         self.context.add_agent(log_agent)
 
         # self.engine.schedule.printSchedule()
-
-    # Getters
-    def get_context(self):
-        return self.context

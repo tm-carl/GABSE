@@ -58,18 +58,10 @@ class Sensor:
         getters : list
             A list of names of all the getter method to call.
         """
-        entry = {"tick": self.engine.schedule.get_tick()}
+        entry = {"tick": self.engine.schedule.tick}
 
         for arg in getters:
-            # print(g)
-            method = getattr(self.parent, "get_" + arg)
-            if not callable(method):
-                # Tests if it is a boolean getter
-                method = getattr(self.parent, "is_" + arg)
-                if not callable(method):
-                    continue
-
-            data = method()
+            data = getattr(self.parent, arg)
             #print(data)
             # check if data is numpy array and convert to list
             if isinstance(data, np.ndarray):
@@ -80,7 +72,7 @@ class Sensor:
 
             entry[arg] = data
 
-        self.logger[self.engine.schedule.get_tick()] = entry
+        self.logger[self.engine.schedule.tick] = entry
         # print(self.engine.getTick())
 
     def merge_logger(self, other_logger: dict):
@@ -96,30 +88,6 @@ class Sensor:
 
         # Sort the logger by tick to maintain chronological order
         self.logger = dict(sorted(self.logger.items()))
-
-    # Getters
-    def get_frequency(self) -> float:
-        """
-        Returns the logging frequency of the sensor.
-
-        Returns
-        -------
-        frequency : float
-            The log frequency.
-        """
-        return self.frequency
-
-    def get_logger(self) -> dict:
-        """
-        Returns the data log associated to the sensor.
-
-        Returns
-        -------
-        logger : dict
-            The data log.
-        """
-        return self.logger
-
 
 # %%
 class DataCollector:
@@ -156,7 +124,7 @@ class DataCollector:
         """
 
         self.repo[f"{agent.__class__.__name__} {agent.id}"] = (
-            agent.get_sensor().get_logger()
+            agent.sensor.logger
         )
 
     def collect_data(self):
@@ -170,9 +138,9 @@ class DataCollector:
         a context logger agent that collects the contextual data and stores it in its sensor log.
         """
 
-        for agt in self.engine.context.get_agents():
+        for agt in self.engine.context.agents:
             self.repo[f"{agt.__class__.__name__} {agt.id}"] = (
-                agt.get_sensor().get_logger()
+                agt.sensor.logger
             )
 
         # print(self.repo)
@@ -212,7 +180,7 @@ class DataCollector:
         self.kpi |= c_kpi
 
         # Search for "get_kpis" method in the agents and call it if exists
-        for agt in self.engine.context.get_agents():
+        for agt in self.engine.context.agents:
             agt_kpi = dict()
             method = getattr(agt, "get_kpis", None)
             if callable(method):
