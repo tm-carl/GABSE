@@ -55,7 +55,7 @@ class Engine:
     ):
         self.tick = 0.0
         self.model_time = model_time
-        self.schedule = Schedule()
+        self.schedule = Schedule(self)
         self.data_logger = DataCollector(self)
         self.dimensions = dimensions
         self.aborted = False
@@ -92,7 +92,7 @@ class Engine:
 
         # Continuously steps through the schedule until the model time is reached or the schedule is empty.
         while self.tick <= self.model_time and len(self.schedule.schedule) > 0 and not self.aborted:
-            self.tick = self.schedule.step(self.tick)
+            self.schedule.step(self.tick)
             # print(self.tick)
 
         # Return collected KPIs and data based on the value of no_arg_out
