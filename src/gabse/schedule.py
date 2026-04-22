@@ -96,8 +96,9 @@ class Schedule:
 
     # Creates an empty schedule (list) and tick timer, set to zero
     # List is sorted based on tick value of actions and priority
-    def __init__(self):
+    def __init__(self, engine):
         self.schedule = SortedList(key=lambda a: (a.tick, a.priority))
+        self.engine = engine
 
     # Schedule method for adding an action in schedule
     def schedule_action(self, action: Action):
@@ -112,7 +113,7 @@ class Schedule:
         self.schedule.add(action)
 
     # Method for stepping forward in simulation
-    def step(self, old_tick) -> float:
+    def step(self, old_tick):
         """
         Steps one entry in the schedule. The step method executes the next action entry and, if reoccurring, re-schedules
         it. It also moves the tick forward one instance, can be the same if multiple actions are scheduled at the same tick.
@@ -122,14 +123,10 @@ class Schedule:
         old_tick : float
             The current tick before stepping.
 
-        Returns
-        -------
-        tick : float
-            The new tick
         """
-        # If schedule is empty after removing past actions, return current tick
+        # If schedule is empty, return current tick
         if not self.schedule:
-            return old_tick
+            pass
 
         # Checks if previous actions exist and, if so, removes them
         while self.schedule[0].tick < old_tick:
@@ -137,12 +134,13 @@ class Schedule:
 
         # If schedule is empty after removing past actions, return current tick
         if not self.schedule:
-            return old_tick
+            pass
+
         # Load the first action in schedule
         action = self.schedule[0]
 
-        # Step to next action tick
-        new_tick = action.tick
+        # Step to next action tick and set the engine ticker to this
+        self.engine.tick = action.tick
 
         # Calls action agent method
         method = getattr(action.agent, action.method)
@@ -175,9 +173,6 @@ class Schedule:
         # Remove the executed action from the schedule
         self.schedule.pop(0)
 
-        # Return current tick
-        return new_tick
-
     #
     def remove_agent_from_list(self, target):
         """
@@ -197,7 +192,7 @@ class Schedule:
         """
         Prints all actions in the schedule.
         """
-        
+
         for action in self.schedule:
             print(action)
 
