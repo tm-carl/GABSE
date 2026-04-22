@@ -87,24 +87,17 @@ class Schedule:
     between the ticks of the scheduled actions. This means that the tick can step in various lengths depending on the
     actions. A dynamic tick step approach enables greater flexibility and faster simulations.
 
-    Parameters
-    ----------
-    tick: float
-        The current simulation tick.
 
     Attributes
     ----------
     schedule: SortedList
         A sorted list of scheduled actions, ordered by tick and priority.
-    tick: float
-        The current simulation tick.
     """
 
     # Creates an empty schedule (list) and tick timer, set to zero
     # List is sorted based on tick value of actions and priority
-    def __init__(self, tick: float):
+    def __init__(self):
         self.schedule = SortedList(key=lambda a: (a.tick, a.priority))
-        self.tick = tick
 
     # Schedule method for adding an action in schedule
     def schedule_action(self, action: Action):
@@ -119,33 +112,37 @@ class Schedule:
         self.schedule.add(action)
 
     # Method for stepping forward in simulation
-    def step(self) -> float:
+    def step(self, old_tick) -> float:
         """
         Steps one entry in the schedule. The step method executes the next action entry and, if reoccurring, re-schedules
         it. It also moves the tick forward one instance, can be the same if multiple actions are scheduled at the same tick.
+
+        Parameters
+        ----------
+        old_tick : float
+            The current tick before stepping.
 
         Returns
         -------
         tick : float
             The new tick
         """
-        # If schedule is empty, return current tick
+        # If schedule is empty after removing past actions, return current tick
         if not self.schedule:
-            return self.tick
+            return old_tick
 
         # Checks if previous actions exist and, if so, removes them
-        while self.schedule[0].tick < self.tick:
+        while self.schedule[0].tick < old_tick:
             self.schedule.pop(0)
 
         # If schedule is empty after removing past actions, return current tick
         if not self.schedule:
-            return self.tick
-
+            return old_tick
         # Load the first action in schedule
         action = self.schedule[0]
 
         # Step to next action tick
-        self.tick = action.tick
+        new_tick = action.tick
 
         # Calls action agent method
         method = getattr(action.agent, action.method)
@@ -179,7 +176,7 @@ class Schedule:
         self.schedule.pop(0)
 
         # Return current tick
-        return self.tick
+        return new_tick
 
     #
     def remove_agent_from_list(self, target):
@@ -200,19 +197,9 @@ class Schedule:
         """
         Prints all actions in the schedule.
         """
+        print(f"Printing schedule from tick: {self.tick}:")
         for action in self.schedule:
             print(action)
-
-    def get_size(self) -> int:
-        """
-        Gets the size of the schedule.
-
-        Returns
-        -------
-        size: int
-            The size (length) of the schedule.
-        """
-        return len(self.schedule)
 
     def clear_schedule(self):
         """

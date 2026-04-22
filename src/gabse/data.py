@@ -72,7 +72,7 @@ class Sensor:
 
             entry[arg] = data
 
-        self.logger[self.engine.schedule.tick] = entry
+        self.logger[self.engine.tick] = entry
         # print(self.engine.getTick())
 
     def merge_logger(self, other_logger: dict):

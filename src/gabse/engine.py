@@ -43,6 +43,8 @@ class Engine:
         The context containing the agents and environment of the simulation. Can also be a child class of Context class.
     schedule : Schedule
         The schedule managing the actions to be executed.
+    aborted : bool
+        Whether the simulation is aborted or not.
     """
 
     def __init__(
@@ -53,9 +55,10 @@ class Engine:
     ):
         self.tick = 0.0
         self.model_time = model_time
-        self.schedule = Schedule(self.tick)
+        self.schedule = Schedule()
         self.data_logger = DataCollector(self)
         self.dimensions = dimensions
+        self.aborted = False
 
         # Initialize context, allowing for custom context to be passed
         if context is None:
@@ -88,8 +91,8 @@ class Engine:
         """
 
         # Continuously steps through the schedule until the model time is reached or the schedule is empty.
-        while self.tick <= self.model_time and self.schedule.get_size() > 0:
-            self.tick = self.schedule.step()
+        while self.tick <= self.model_time and len(self.schedule.schedule) > 0 and not self.aborted:
+            self.tick = self.schedule.step(self.tick)
             # print(self.tick)
 
         # Return collected KPIs and data based on the value of no_arg_out
@@ -113,4 +116,5 @@ class Engine:
         data up to the point of abortion.
         """
         self.schedule.clear_schedule()
+        self.aborted = True
         #print(f"Stopped at: {self.tick}")
