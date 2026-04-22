@@ -139,9 +139,10 @@ class DataCollector:
         """
 
         for agt in self.engine.context.agents:
-            self.repo[f"{agt.__class__.__name__} {agt.id}"] = (
-                agt.sensor.logger
-            )
+            if agt.sensor is not None:
+                self.repo[f"{agt.__class__.__name__} {agt.id}"] = (
+                    agt.sensor.logger
+                )
 
         # print(self.repo)
 
