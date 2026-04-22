@@ -197,7 +197,7 @@ class Schedule:
         """
         Prints all actions in the schedule.
         """
-        print(f"Printing schedule from tick: {self.tick}:")
+        
         for action in self.schedule:
             print(action)
 
