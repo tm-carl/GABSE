@@ -8,7 +8,7 @@ This is the GABSE (Generic Agent-Based Simulation for Engineering) framework.
 # version number
 __name__ = "gabse"
 __author__ = "Carl Toller Melén"
-__version__ = "0.1.6-alpha2"
+__version__ = "0.1.6-alpha3"
 
 from .engine import Engine
 from .agent import Agent
