@@ -58,7 +58,7 @@ class Sensor:
         getters : list
             A list of names of all the getter method to call.
         """
-        entry = {"tick": self.engine.schedule.tick}
+        entry = dict() #{"tick": self.engine.schedule.tick}
 
         for arg in getters:
             data = getattr(self.parent, arg)
