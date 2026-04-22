@@ -17,7 +17,7 @@ class Person(gabse.Agent):
         getters = ["position", "alive"]
 
         a = gabse.Action(
-            self.engine.schedule.tick + 1,
+            self.engine.tick + 1,
             self.sensor,
             "entry",
             getters,
@@ -66,7 +66,7 @@ class Zombie(gabse.Agent):
         getters = ["position"]
 
         a = gabse.Action(
-            engine.schedule.tick + 1,
+            engine.tick + 1,
             self.sensor,
             "entry",
             getters,
@@ -148,7 +148,7 @@ class Logger(gabse.Agent):
         self.sensor = sensor
 
         a = gabse.Action(
-            engine.schedule.tick + 1,
+            engine.tick + 1,
             sensor,
             "entry",
             ["agent_counts"],
@@ -190,5 +190,5 @@ class Logger(gabse.Agent):
             "person_count": self.engine.context.get_agent_count(["Person"])["Person"],
             "zombie_count": self.engine.context.get_agent_count(["Zombie"])["Zombie"],
             "kill_ratio": kill_ratio,
-            "kill_rate": round((curr_zombie_count - init_zombie_count) / self.engine.schedule.tick, 4)
+            "kill_rate": round((curr_zombie_count - init_zombie_count) / self.engine.tick, 4)
         }
