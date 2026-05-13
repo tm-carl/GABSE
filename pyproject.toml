@@ -33,11 +33,12 @@ dependencies = [
     "numpy>=2.3.4",
     "scipy>=1.16.3",
     "sortedcontainers>=2.4.0",
+    "nanoid>=2.0.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/tm-carl/GABSE"
-#Documentation = ""
+Documentation = "https://github.com/tm-carl/GABSE/wiki"
 Repository = "https://github.com/tm-carl/GABSE"
 Issues = "https://github.com/tm-carl/GABSE/issues"
 
