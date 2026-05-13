@@ -17,7 +17,7 @@ jobs:
       - name: Extract version
         id: get_version
         run: |
-          VERSION=$(grep -oP '__version__ = "\K[^"]+' gabse/__init__.py)
+          VERSION=$(grep -oP '__version__ = "\K[^"]+' src/gabse/__init__.py)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create tag if not exists
