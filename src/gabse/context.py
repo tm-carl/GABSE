@@ -1,7 +1,6 @@
 """
 This module contains the simulation context class.
 """
-from typing import Any
 
 # %%
 # Import required packages
@@ -9,7 +8,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .agent import Agent
-from .data import Sensor
 
 
 # %%

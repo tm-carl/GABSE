@@ -6,7 +6,7 @@ This module contains the operational data classes.
 # Import required packages
 import numpy as np
 import copy
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .engine import Engine

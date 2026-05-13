@@ -28,8 +28,6 @@ class Engine:
         the following: *[X-min, Y-min, Z-min, X-max, Y-max, Z-max]*
     context : Context, optional
         The context to be used, if custom. Default is to use the built-in context.
-    collect_data : bool, optional
-        Whether to collect data at the end of the simulation. Default is False.
 
     Attributes
     ----------

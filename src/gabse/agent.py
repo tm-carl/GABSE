@@ -2,7 +2,7 @@
 This module contains the simulation agent class.
 """
 
-from typing import Any, Sequence, List, Iterable
+from typing import Any, Sequence
 
 # %%
 # Import required packages
@@ -92,7 +92,7 @@ class Agent:
 
         self.sensor = sensor
 
-    def find_neighbours(self, agents: Iterable["Agent"], noOfNeighbours: int) -> list | Any:
+    def find_neighbours(self, agents: Sequence["Agent"], noOfNeighbours: int) -> list | Any:
         """
         Calculates the distance between *self* and a list of *agents*, neighbors, based on Euclidean distance. It then
         filters out based on the number of neighbors to include, minimum one.
@@ -111,6 +111,8 @@ class Agent:
         """
         if not agents:
             return [] if noOfNeighbours != 1 else None
+
+        agents = list(agents)
 
         n = len(agents)
         k = min(noOfNeighbours, n)
