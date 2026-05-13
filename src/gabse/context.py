@@ -36,7 +36,6 @@ class Context:
         self.dimensions = dimensions
         self.grid = None
         self.agents = list()
-        self._dirty = True
 
     def add_agent(self, agent: Agent):
         """
@@ -48,7 +47,6 @@ class Context:
             The agent to add.
         """
         self.agents.append(agent)
-        self._dirty = True
 
     def remove_agent(self, agent: Agent):
         """
@@ -61,10 +59,6 @@ class Context:
         """
         # Finds the right agent in the list and removes it
         self.agents.remove(agent)
-        self._dirty = True
-
-    def mark_dirty(self):
-        self._dirty = True
 
     # Checks if an object is of a specific class name
     @staticmethod
@@ -125,28 +119,6 @@ class Context:
 
         return next((a for a in self.agents if a.agent_id == agent_id), None)
 
-
-
-    def get_positions_array(self):
-        """
-        Returns a (n, dim) numpy array of agent positions.
-        Cached until an agent calls context.mark_dirty().
-
-        Returns
-        -------
-        pos_array : np.ndarray
-            The position array.
-        """
-        if self._dirty:
-            if not self.agents:
-                self._positions_cache = np.empty((0, self.dimensions.size // 2))
-            else:
-                # list comprehension into vstack once per rebuild
-                self._positions_cache = np.vstack(
-                    [a.position for a in self.agents]
-                )
-            self._dirty = False
-        return self._positions_cache
 
     def get_agent_count(self, classes: list = None) -> dict:
         """

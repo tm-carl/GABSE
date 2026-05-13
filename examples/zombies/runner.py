@@ -8,7 +8,7 @@ import Builder
 #%%
 tic = time.perf_counter()
 
-model_time=10.0
+model_time=1000
 person_quantity=10
 person_speed=1
 zombie_quantity=1

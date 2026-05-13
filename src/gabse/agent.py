@@ -2,7 +2,7 @@
 This module contains the simulation agent class.
 """
 
-from typing import Any, Sequence
+from typing import Any, Sequence, List, Iterable
 
 # %%
 # Import required packages
@@ -92,14 +92,14 @@ class Agent:
 
         self.sensor = sensor
 
-    def find_neighbours(self, agents: Sequence["Agent"], noOfNeighbours: int) -> list | Any:
+    def find_neighbours(self, agents: Iterable["Agent"], noOfNeighbours: int) -> list | Any:
         """
         Calculates the distance between *self* and a list of *agents*, neighbors, based on Euclidean distance. It then
         filters out based on the number of neighbors to include, minimum one.
 
         Parameters
         ----------
-        agents : list
+        agents : Iterable
             A list of agents for which to calculate distance with.
         noOfNeighbours : int
             The number of closest neighbors to include.
@@ -116,40 +116,19 @@ class Agent:
         k = min(noOfNeighbours, n)
 
         # Try KDTree for large n or repeated queries
-        try:
-            pos = np.vstack([a.position for a in agents])
-            tree = _cKDTree(pos)
-            dists, idxs = tree.query(self.position, k=k)
-            if k == 1:
-                return agents[int(idxs)]
-            if np.isscalar(idxs):
-                idxs = [int(idxs)]
-            else:
-                idxs = [int(i) for i in np.atleast_1d(idxs)]
-            return [agents[i] for i in idxs]
-        except Exception:
-            # Get self position
-            self_pos = self.position
+        pos = np.vstack([a.position for a in agents])
+        tree = _cKDTree(pos)
+        dists, idxs = tree.query(self.position, k=k)
+        if k == 1:
+            return agents[int(idxs)]
 
-            # stack positions (shape: (n, dim)) and compute squared distances
-            pos = self.engine.context.get_positions_array()
+        if np.isscalar(idxs):
+            idxs = [int(idxs)]
+        else:
+            idxs = [int(i) for i in np.atleast_1d(idxs)]
 
-            if pos.size == 0:
-                return [] if noOfNeighbours != 1 else None
+        return [agents[i] for i in idxs]
 
-            # compute squared Euclidean distances
-            d2 = np.sum((pos - self_pos) ** 2, axis=1)
-
-            # Return based if only one neighbors requested
-            if k == 1:
-                return agents[int(np.argmin(d2))]
-            if k < n:
-                idx_k = np.argpartition(d2, k - 1)[:k]
-                idx_sorted = idx_k[np.argsort(d2[idx_k])]
-            else:
-                idx_sorted = np.argsort(d2)
-
-            return [agents[i] for i in idx_sorted[:k]]
 
     def check_out_of_bounds(self) -> NDArray[np.float64]:
         """
@@ -186,10 +165,6 @@ class Agent:
         if orientation is not None:
             self.orientation = orientation
 
-        try:
-            self.engine.context.mark_dirty()
-        except Exception:
-            pass
 
     def move_vector(self, move_vector: NDArray[np.float64], rotation_vector: NDArray[np.float64] = None):
         """
@@ -210,10 +185,6 @@ class Agent:
         if rotation_vector is not None:
             self.orientation += rotation_vector
 
-        try:
-            self.engine.context.mark_dirty()
-        except Exception:
-            pass
 
     # Calculate Euclidean distance between two agents
     def calculate_distance(self, agent2: "Agent") -> floating[Any]:
