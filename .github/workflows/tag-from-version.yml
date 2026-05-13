@@ -1,0 +1,35 @@
+name: Auto Tag from Version
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # needed to push tags
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: get_version
+        run: |
+          VERSION=$(grep -oP '__version__ = "\K[^"]+' gabse/__init__.py)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create tag if not exists
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          TAG="v${{ steps.get_version.outputs.version }}"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists"
+          else
+            git tag $TAG
+            git push origin $TAG
+          fi
