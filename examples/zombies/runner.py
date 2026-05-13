@@ -6,6 +6,10 @@ import os
 import Builder
 
 #%%
+
+#import tracemalloc
+#tracemalloc.start()
+
 tic = time.perf_counter()
 
 model_time=1000
@@ -40,6 +44,11 @@ with open(file_path, "w") as f:
 #    json.dump(repo, f, indent=4)
 
 # %%
+
+#snapshot = tracemalloc.take_snapshot()
+#top = snapshot.statistics('lineno')
+#for stat in top[:10]:
+#    print(stat)
 
 # Visualize the simulation data
 

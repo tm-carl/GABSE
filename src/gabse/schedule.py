@@ -11,6 +11,32 @@ if TYPE_CHECKING:
     from .agent import Agent
     from .data import Sensor
 
+#%%
+
+def call_action(action: Action):
+    """
+    Calls the method specified in the action on the agent with the provided arguments.
+
+    Parameters
+    ----------
+    action : Action
+        The action to be called.
+    """
+    method = getattr(action.agent, action.method)
+
+    args = []
+
+    if action.args is not None:
+        args = list(action.args)
+
+    # Check and call
+    if callable(method):
+        if action.args is None or len(args) == 0:
+            method()
+        else:
+            method(*args)
+    else:
+        raise ValueError("Method not found or not callable.")
 
 # %%
 class Action:
@@ -44,7 +70,7 @@ class Action:
     method: str
         The name of the method to be called on the agent.
     args: list, optional
-        The arguments to be passed to the method. Can be None, empty list, or "" if no arguments are needed.
+        The arguments to be passed to the method. Can be None if no arguments are needed.
     priority: int, optional
         The priority of the action (lower values indicate higher priority). Default is 0.
     interval: float, optional
@@ -57,7 +83,7 @@ class Action:
         tick: float,
         agent: "Agent | Sensor",
         method: str,
-        args: list = None,
+        args: list | None = None,
         priority: int = 0,
         interval: float = 0,
     ):
@@ -98,6 +124,7 @@ class Schedule:
     # List is sorted based on tick value of actions and priority
     def __init__(self, engine):
         self.schedule = SortedList(key=lambda a: (a.tick, a.priority))
+        self.end_schedule = SortedList(key=lambda a: a.priority)
         self.engine = engine
 
     # Schedule method for adding an action in schedule
@@ -112,7 +139,17 @@ class Schedule:
         """
         self.schedule.add(action)
 
-    # Method for stepping forward in simulation
+    def schedule_end_action(self, action: Action):
+        """
+        Schedules an end action that will be executed at the end of the simulation, after all regular actions have been executed.
+
+        Parameters
+        ----------
+        action : Action
+            The action object to be scheduled as an end action.
+        """
+        self.end_schedule.add(action)
+
     def step(self, old_tick):
         """
         Steps one entry in the schedule. The step method executes the next action entry and, if reoccurring, re-schedules
@@ -143,21 +180,7 @@ class Schedule:
         self.engine.tick = action.tick
 
         # Calls action agent method
-        method = getattr(action.agent, action.method)
-
-        # print(f"{action.agent} at {self.tick}")
-        # print(action.method)
-        # print(args)
-
-        # Check and call
-        if callable(method):
-            if action.args is None or len(action.args) == 0 or action.args == "":
-                method()
-            else:
-                method(*action.args)
-            # print(result)  # Output: 1, 2, 3
-        else:
-            print("Method not found or not callable.")
+        call_action(action)
 
         # Checks if the action is recurring and, if so, schedules next instance
         if action.interval > 0.0:
@@ -173,7 +196,27 @@ class Schedule:
         # Remove the executed action from the schedule
         self.schedule.pop(0)
 
-    #
+    def end_step(self):
+        """
+
+        Returns
+        -------
+
+        """
+        # If schedule is empty, return current tick
+        if not self.end_schedule:
+            pass
+
+        # Load the first action in schedule
+        action = self.end_schedule[0]
+
+        # Calls action agent method
+        call_action(action)
+
+        # Remove the executed action from the schedule
+        self.end_schedule.pop(0)
+
+
     def remove_agent_from_list(self, target):
         """
         Removes all actions related to the target agent. This is useful if an agent has become obsolete, e.g. killed.

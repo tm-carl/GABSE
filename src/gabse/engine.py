@@ -93,6 +93,10 @@ class Engine:
             self.schedule.step(self.tick)
             # print(self.tick)
 
+        # At the end of the simulation, iterate through end actions assigned (allowing for final events to occur)
+        while len(self.schedule.end_schedule) > 0:
+            self.schedule.end_step()
+
         # Return collected KPIs and data based on the value of no_arg_out
         if no_arg_out == 0: # default, returns nothing
             return None
