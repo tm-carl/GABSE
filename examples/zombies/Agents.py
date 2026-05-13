@@ -11,7 +11,7 @@ class Person(gabse.Agent):
 
         super().__init__(engine, position=position)
 
-        freq = 10.0
+        freq = 1.0
         self.sensor = gabse.Sensor(engine, self, freq)
 
         getters = ["position", "alive"]
@@ -61,7 +61,7 @@ class Zombie(gabse.Agent):
         self.speed = speed
         super().__init__(engine, position=position)
 
-        freq = 10.0
+        freq = 1.0
         self.sensor = gabse.Sensor(engine, self, freq)
         getters = ["position"]
 
@@ -118,7 +118,7 @@ class Zombie(gabse.Agent):
         newZombie = Zombie(self.speed, self.engine, victim.position)
         self.engine.context.add_agent(newZombie)
         a = gabse.Action(
-            self.engine.schedule.tick + 1, newZombie, "hunt", "", 10, 1
+            self.engine.tick + 1, newZombie, "hunt", "", 10, 1
         )
         self.engine.schedule.schedule_action(a)
 

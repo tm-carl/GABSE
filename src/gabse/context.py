@@ -87,7 +87,7 @@ class Context:
         repo = dict()
 
         for agent in self.agents:
-            repo[agent.id] = (agent.__class__.__name, agent.position)
+            repo[agent.agent_id] = (agent.__class__.__name, agent.position)
 
         return repo
 
@@ -123,7 +123,7 @@ class Context:
             The agent with the specified unique identifier, or None if not found.
         """
 
-        return next((a for a in self.agents if a.id == agent_id), None)
+        return next((a for a in self.agents if a.agent_id == agent_id), None)
 
 
 

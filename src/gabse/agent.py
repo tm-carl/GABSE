@@ -35,7 +35,7 @@ class Agent:
     ----------
     engine : Engine
         Reference to the simulation engine.
-    id : str, optional
+    agent_id : str, optional
         Unique identifier for the agent. Default is to automatically generate a unique ID using nanoid with a size of 7.
     position : NDArray[np.float64], optional
         The 3D position of the agent in the simulation space. Default is [0, 0, 0].
@@ -47,7 +47,7 @@ class Agent:
 
     Attributes
     ----------
-    id: str
+    agent_id: str
         Unique identifier for the agent, either assigned or automatically generated using nanoid with a size 7.
     position: np.ndarray
         The 3D position of the agent in the simulation space.
@@ -63,19 +63,19 @@ class Agent:
     # Initialize agent with unique ID, position, engine reference, and empty sensor
     def __init__(self,
                  engine: "Engine",
-                 id: str | None = None,
+                 agent_id: str | None = None,
                  position: NDArray[np.float64] | None = None,
                  orientation: NDArray[np.float64] | None = None,
                  sensor: Sensor = None
                  ):
         #Agent._id_counter += 1
-        # Generate a unique id at instantiation time when not provided.
+        # Generate a unique agent_id at instantiation time when not provided.
         # (Avoid evaluating nanoid.generate at function-definition time which would
         # produce the same default for every instance.)
-        if id is None:
-            id = nanoid.generate(size=7)
+        if agent_id is None:
+            agent_id = nanoid.generate(size=7)
 
-        self.id = id
+        self.agent_id = agent_id
         self.engine = engine
 
         # Avoid using mutable objects as default arguments. Create fresh arrays

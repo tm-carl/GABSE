@@ -123,7 +123,7 @@ class DataCollector:
             The agent whose log is to be stored.
         """
 
-        self.repo[f"{agent.__class__.__name__} {agent.id}"] = (
+        self.repo[f"{agent.__class__.__name__} {agent.agent_id}"] = (
             agent.sensor.logger
         )
 
@@ -140,7 +140,7 @@ class DataCollector:
 
         for agt in self.engine.context.agents:
             if agt.sensor is not None:
-                self.repo[f"{agt.__class__.__name__} {agt.id}"] = (
+                self.repo[f"{agt.__class__.__name__} {agt.agent_id}"] = (
                     agt.sensor.logger
                 )
 
@@ -191,7 +191,7 @@ class DataCollector:
                 else:
                     print(f"get_kpis method found in {agt} but did not return a dictionary.")
 
-                self.kpi[f"{agt.__class__.__name__} {agt.id}"] = agt_kpi
+                self.kpi[f"{agt.__class__.__name__} {agt.agent_id}"] = agt_kpi
 
 
 
