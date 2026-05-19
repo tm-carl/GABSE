@@ -13,3 +13,4 @@ __pycache__/
 /Makefile
 /zombie_simulation_data.json
 *.pyc
+/examples/zombies/zombie_dash.py
