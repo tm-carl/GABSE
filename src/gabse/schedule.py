@@ -1,15 +1,11 @@
 """
 This module contains the simulation scheduling classes.
 """
+from __future__ import annotations
 
 # %%
 # Import required packages
 from sortedcontainers import SortedList
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .agent import Agent
-    from .data import Sensor
 
 #%%
 
@@ -81,7 +77,7 @@ class Action:
     def __init__(
         self,
         tick: float,
-        agent: "Agent | Sensor",
+        agent,
         method: str,
         args: list | None = None,
         priority: int = 0,
@@ -217,7 +213,7 @@ class Schedule:
         self.end_schedule.pop(0)
 
 
-    def remove_agent_from_list(self, target):
+    def remove_agent_from_list(self, target: Agent):
         """
         Removes all actions related to the target agent. This is useful if an agent has become obsolete, e.g. killed.
 
