@@ -209,7 +209,7 @@ class Schedule:
         self.end_schedule.pop(0)
 
 
-    def remove_agent_from_list(self, target: Agent):
+    def remove_agent_from_list(self, target):
         """
         Removes all actions related to the target agent. This is useful if an agent has become obsolete, e.g. killed.
 
