@@ -1,38 +1,10 @@
 """
 This module contains the simulation scheduling classes.
 """
-from __future__ import annotations
 
 # %%
 # Import required packages
 from sortedcontainers import SortedList
-
-#%%
-
-def call_action(action: Action):
-    """
-    Calls the method specified in the action on the agent with the provided arguments.
-
-    Parameters
-    ----------
-    action : Action
-        The action to be called.
-    """
-    method = getattr(action.agent, action.method)
-
-    args = []
-
-    if action.args is not None:
-        args = list(action.args)
-
-    # Check and call
-    if callable(method):
-        if action.args is None or len(args) == 0:
-            method()
-        else:
-            method(*args)
-    else:
-        raise ValueError("Method not found or not callable.")
 
 # %%
 class Action:
@@ -97,6 +69,30 @@ class Action:
     def __str__(self):
         return f"Action entry:\ntick: {self.tick}, agent: {self.agent}, method: {self.method}, arguments: {self.args}, priority: {self.priority}, interval: {self.interval}"
 
+def call_action(action: Action):
+    """
+    Calls the method specified in the action on the agent with the provided arguments.
+
+    Parameters
+    ----------
+    action : Action
+        The action to be called.
+    """
+    method = getattr(action.agent, action.method)
+
+    args = []
+
+    if action.args is not None:
+        args = list(action.args)
+
+    # Check and call
+    if callable(method):
+        if action.args is None or len(args) == 0:
+            method()
+        else:
+            method(*args)
+    else:
+        raise ValueError("Method not found or not callable.")
 
 # %%
 class Schedule:
