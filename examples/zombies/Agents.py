@@ -12,7 +12,7 @@ class Person(gabse.Agent):
         super().__init__(engine, position=position)
 
         freq = 1.0
-        self.sensor = gabse.Sensor(engine, self, freq)
+        self.sensor = gabse.Sensor(self, freq)
 
         getters = ["position", "alive"]
 
@@ -28,7 +28,7 @@ class Person(gabse.Agent):
 
     def get_zombies(self):
         zombies = filter(
-            lambda x: x.__class__.__name__ == "Zombie", self.engine.context.agents
+            lambda x: x.__class__.__name__ == "Zombie", self.engine.context.agents.values()
         )
         return list(zombies)
 
@@ -62,7 +62,7 @@ class Zombie(gabse.Agent):
         super().__init__(engine, position=position)
 
         freq = 1.0
-        self.sensor = gabse.Sensor(engine, self, freq)
+        self.sensor = gabse.Sensor(self, freq)
         getters = ["position"]
 
         a = gabse.Action(
@@ -77,7 +77,7 @@ class Zombie(gabse.Agent):
 
     def get_persons(self):
         p = filter(
-            lambda x: x.__class__.__name__ == "Person", self.engine.context.agents
+            lambda x: x.__class__.__name__ == "Person", self.engine.context.agents.values()
         )
 
         return list(filter(lambda x: x.alive, p))
@@ -143,7 +143,7 @@ class Zombie(gabse.Agent):
 class Logger(gabse.Agent):
     def __init__(self, engine, position=np.array([0, 0, 0])):
         super().__init__(engine, position=position)
-        sensor = gabse.Sensor(engine, self, 1.0)
+        sensor = gabse.Sensor(self, 1.0)
         self._agent_counts = self.agent_counts
         self.sensor = sensor
 
@@ -161,8 +161,8 @@ class Logger(gabse.Agent):
     def agent_counts(self):
         counts = dict()
 
-        counts["Person"] = self.engine.context.get_agent_count(["Person"])["Person"]
-        counts["Zombie"] = self.engine.context.get_agent_count(["Zombie"])["Zombie"]
+        counts["Person"] = self.engine.context.get_agent_count([Person])["Person"]
+        counts["Zombie"] = self.engine.context.get_agent_count([Zombie])["Zombie"]
 
         return counts
 
@@ -187,8 +187,8 @@ class Logger(gabse.Agent):
 
 
         return {
-            "person_count": self.engine.context.get_agent_count(["Person"])["Person"],
-            "zombie_count": self.engine.context.get_agent_count(["Zombie"])["Zombie"],
+            "person_count": self.engine.context.get_agent_count([Person])["Person"],
+            "zombie_count": self.engine.context.get_agent_count([Zombie])["Zombie"],
             "kill_ratio": kill_ratio,
             "kill_rate": round((curr_zombie_count - init_zombie_count) / self.engine.tick, 4)
         }

@@ -87,4 +87,4 @@ class Builder:
         log_agent = Agents.Logger(self.engine)
         self.context.add_agent(log_agent)
 
-        # self.engine.schedule.printSchedule()
+        # self.engine.run_schedule.printSchedule()
