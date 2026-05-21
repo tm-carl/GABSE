@@ -30,10 +30,10 @@ class Context:
     """
     # Initializes the context with dimensions and empty agent list
     def __init__(self, dimensions: NDArray[np.float64]):
-        self._positions_cache = None
         self.dimensions = dimensions
         self.grid = None
-        self.agents = list()
+        #self.agents: list[Agent] = []
+        self.agents: dict[str, Agent] = {}
 
     def add_agent(self, agent: Agent):
         """
@@ -44,7 +44,8 @@ class Context:
         agent : Agent
             The agent to add.
         """
-        self.agents.append(agent)
+        #self.agents.append(agent)
+        self.agents[agent.agent_id] = agent
 
     def remove_agent(self, agent: Agent):
         """
@@ -55,50 +56,24 @@ class Context:
         agent : Agent
             The agent to be removed.
         """
-        # Finds the right agent in the list and removes it
-        self.agents.remove(agent)
+        #self.agents.remove(agent)
+        self.agents.pop(agent.agent_id, None)
 
-    # Checks if an object is of a specific class name
-    @staticmethod
-    def check_class(obj, name) -> bool:
-        if obj.__class__.__name__ == name:
-            return True
-        else:
-            return False
-
-    def get_agents_positions(self):
+    def get_agents_by_class(self, cls: type) -> list:
         """
-        Collects the positions of all agents in the context and returns them as a numpy array.
-
-        Returns
-        -------
-        positions : NDArray[np.float64]
-            A numpy array containing the positions of all agents.
-        """
-
-        repo = dict()
-
-        for agent in self.agents:
-            repo[agent.agent_id] = (agent.__class__.__name, agent.position)
-
-        return repo
-
-    # Getters
-    def get_agents_by_class(self, class_name: str) -> list:
-        """
-        Gets all agents of a specific class.
+        Gets all agents that are instances of *cls* (including subclasses).
 
         Parameters
         ----------
-        class_name : str
-            The name of the class
+        cls : type
+            The class to filter by, e.g. ``HumanAgent``.
 
         Returns
         -------
         agents : list
-            A list of agents.
+            A list of matching agents.
         """
-        return [agent for agent in self.agents if self.check_class(agent, class_name)]
+        return [agent for agent in self.agents.values() if isinstance(agent, cls)]
 
     def get_agent_by_id(self, agent_id: str) -> Agent | None:
         """
@@ -115,38 +90,33 @@ class Context:
             The agent with the specified unique identifier, or None if not found.
         """
 
-        return next((a for a in self.agents if a.agent_id == agent_id), None)
+        return self.agents.get(agent_id)
 
 
-    def get_agent_count(self, classes: list = None) -> dict:
+    def get_agent_count(self, classes: list[type] | None = None) -> dict:
         """
-        Gets the agent count for each agent type based on class.
+        Gets the agent count per agent type.
 
         Parameters
         ----------
-        classes : list, optional
-            A List of classes to count. If *None*, then alla classes are counted.
+        classes : list[type], optional
+            A list of types to count, e.g. ``[HumanAgent, ZombieAgent]``.
+            If *None*, every distinct type present in the context is counted.
 
         Returns
         -------
         count : dict
-            A dictionary with each agent class and their count.
+            A dictionary mapping class name strings to their agent counts.
         """
-        count = dict()
+        count: dict[str, int] = {}
 
-        # if no classes provided, return total count for each agent type
         if not classes:
-            unique_classes = set(obj.__class__.__name__ for obj in self.agents)
-            for cls in unique_classes:
-                a = sum(self.check_class(obj, cls) for obj in self.agents)
-                count[cls] = a
+            unique_types = set(type(obj) for obj in self.agents.values())
+            for cls in unique_types:
+                count[cls.__name__] = sum(isinstance(obj, cls) for obj in self.agents.values())
             return count
 
-        for arg in classes:
-            # print(arg)
-            a = sum(self.check_class(obj, arg) for obj in self.agents)
-            # print(a)
-            count[arg] = a
+        for cls in classes:
+            count[cls.__name__] = sum(isinstance(obj, cls) for obj in self.agents.values())
 
-        # print(count)
         return count
