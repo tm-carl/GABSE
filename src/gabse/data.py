@@ -18,12 +18,10 @@ if TYPE_CHECKING:
 class Sensor:
     """
     A class representing a sensor that logs data from an agent over time. The sensor logs the sensory data based on the
-    getter list that is fed as arguments when the sensor is added to the schedule.
+    getter list that is fed as arguments when the sensor is added to the run_schedule.
 
     Parameters
     ----------
-    engine: Engine
-        Reference to the simulation engine.
     parent : Agent
         The agent to which the sensor is attached.
     frequency : float
@@ -31,8 +29,6 @@ class Sensor:
 
     Attributes
     ----------
-    engine: Engine
-        Reference to the simulation engine.
     parent : Agent
         The agent to which the sensor is attached.
     logger : dict
@@ -42,8 +38,7 @@ class Sensor:
     """
 
     # Initializes the sensor with engine reference, parent agent, empty logger, and frequency
-    def __init__(self, engine: "Engine", parent: "Agent | Context", frequency: float):
-        self.engine = engine
+    def __init__(self, parent: "Agent | Context", frequency: float):
         self.parent = parent
         self.logger = dict()
         self.frequency = frequency
@@ -58,7 +53,7 @@ class Sensor:
         getters : list
             A list of names of all the getter method to call.
         """
-        entry = dict() #{"tick": self.engine.schedule.tick}
+        entry = dict()
 
         for arg in getters:
             data = getattr(self.parent, arg)
@@ -72,7 +67,7 @@ class Sensor:
 
             entry[arg] = data
 
-        self.logger[self.engine.tick] = entry
+        self.logger[self.parent.engine.tick] = entry
         # print(self.engine.getTick())
 
     def merge_logger(self, other_logger: dict):
@@ -95,21 +90,16 @@ class DataCollector:
     The data collection manager used for collecting and exporting the operational data for a simulation. The export is
     stored in a dictionary.
 
-    Parameters
-    ----------
-    engine:Engine
-        The simulation engine
-
     Attributes
     ----------
-    engine:Engine
-        The simulation engine
     repo:dict
         The data repository.
+
+    kpi:dict
+        The key performance indicators (KPIs) repository.
     """
 
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self):
         self.repo = dict()
         self.kpi = dict()
 
@@ -127,7 +117,7 @@ class DataCollector:
             agent.sensor.logger
         )
 
-    def collect_data(self):
+    def collect_data(self, agents: dict[str, Agent]):
         """
         Collects data from all agents' sensors and stores it in the repository. This method iterates through all
         agents in the simulation context, retrieves their logs from their sensors, and stores them in the repository
@@ -136,9 +126,14 @@ class DataCollector:
         Noteworthy, the collection collects logs from agents listed in the context, but does not collect logs from
         the context itself. If there is a wish to store contextual data as a log, then the recommended way is to create
         a context logger agent that collects the contextual data and stores it in its sensor log.
+
+        Parameters
+        ----------
+        agents : dict[str, Agent]
+            The agents in the simulation, used for collecting logs from each agent's sensor if it exists.
         """
 
-        for agt in self.engine.context.agents:
+        for agt in agents.values():
             if agt.sensor is not None:
                 self.repo[f"{agt.__class__.__name__} {agt.agent_id}"] = (
                     agt.sensor.logger
@@ -158,18 +153,26 @@ class DataCollector:
         """
         return self.repo
 
-    def collect_kpis(self):
+    def collect_kpis(self, tick: float, context: Context, agents: dict[str, Agent]):
         """
         Collects a key performance indicators (KPIs) and stores it in the KPI repository.
+
+        Parameters
+        ----------
+        tick : float
+            The current simulation tick, used for storing the model time KPI.
+        context : Context
+            The simulation context, used for collecting KPIs from the context if a "get_kpis" method is defined.
+        agents : dict[str, Agent]
+            The agents in the simulation, used for collecting KPIs from each agent if a "get_kpis" method is defined in the agent class.
         """
 
         # Gets the total model time
-        self.kpi["model_time"] = self.engine.tick
+        self.kpi["model_time"] = tick
 
-        c = self.engine.context
         c_kpi = dict()
         # Search for "get_kpis" method in the context and call it if exists
-        method = getattr(c, "get_kpis", None)
+        method = getattr(context, "get_kpis", None)
         if callable(method):
             kpis = method()
             if isinstance(kpis, dict):
@@ -181,7 +184,7 @@ class DataCollector:
         self.kpi |= c_kpi
 
         # Search for "get_kpis" method in the agents and call it if exists
-        for agt in self.engine.context.agents:
+        for agt in agents.values():
             agt_kpi = dict()
             method = getattr(agt, "get_kpis", None)
             if callable(method):
@@ -192,9 +195,6 @@ class DataCollector:
                     print(f"get_kpis method found in {agt} but did not return a dictionary.")
 
                 self.kpi[f"{agt.__class__.__name__} {agt.agent_id}"] = agt_kpi
-
-
-
 
     def export_kpis(self):
         """

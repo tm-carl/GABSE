@@ -69,30 +69,7 @@ class Action:
     def __str__(self):
         return f"Action entry:\ntick: {self.tick}, agent: {self.agent}, method: {self.method}, arguments: {self.args}, priority: {self.priority}, interval: {self.interval}"
 
-def call_action(action: Action):
-    """
-    Calls the method specified in the action on the agent with the provided arguments.
 
-    Parameters
-    ----------
-    action : Action
-        The action to be called.
-    """
-    method = getattr(action.agent, action.method)
-
-    args = []
-
-    if action.args is not None:
-        args = list(action.args)
-
-    # Check and call
-    if callable(method):
-        if action.args is None or len(args) == 0:
-            method()
-        else:
-            method(*args)
-    else:
-        raise ValueError("Method not found or not callable.")
 
 # %%
 class Schedule:
@@ -108,28 +85,39 @@ class Schedule:
 
     Attributes
     ----------
-    schedule: SortedList
+    run_schedule: SortedList
         A sorted list of scheduled actions, ordered by tick and priority.
+
+    end_schedule: SortedList
+        A sorted list of end actions that are executed at the end of the simulation, ordered by priority.
     """
 
-    # Creates an empty schedule (list) and tick timer, set to zero
-    # List is sorted based on tick value of actions and priority
-    def __init__(self, engine):
-        self.schedule = SortedList(key=lambda a: (a.tick, a.priority))
+    def __init__(self):
+        self.run_schedule = SortedList(key=lambda a: (a.tick, a.priority))
         self.end_schedule = SortedList(key=lambda a: a.priority)
-        self.engine = engine
 
-    # Schedule method for adding an action in schedule
+    # Schedule method for adding an action in run_schedule
     def schedule_action(self, action: Action):
         """
-        Schedules an action and places it according to its tick and priority
+        Schedules an action and places it according to its tick and priority.
+        Raises ``AttributeError`` immediately if the method name does not exist on
+        the agent, so typos are caught at scheduling time rather than execution time.
 
         Parameters
         ----------
         action : Action
             The action object to be scheduled.
+
+        Raises
+        ------
+        AttributeError
+            If the agent does not have a method matching *action.method*.
         """
-        self.schedule.add(action)
+        if not hasattr(action.agent, action.method):
+            raise AttributeError(
+                f"Agent '{type(action.agent).__name__}' has no method '{action.method}'."
+            )
+        self.run_schedule.add(action)
 
     def schedule_end_action(self, action: Action):
         """
@@ -139,77 +127,19 @@ class Schedule:
         ----------
         action : Action
             The action object to be scheduled as an end action.
+
+        Raises
+        ------
+        AttributeError
+            If the agent does not have a method matching *action.method*.
         """
+        if not hasattr(action.agent, action.method):
+            raise AttributeError(
+                f"Agent '{type(action.agent).__name__}' has no method '{action.method}'."
+            )
         self.end_schedule.add(action)
 
-    def step(self, old_tick):
-        """
-        Steps one entry in the schedule. The step method executes the next action entry and, if reoccurring, re-schedules
-        it. It also moves the tick forward one instance, can be the same if multiple actions are scheduled at the same tick.
-
-        Parameters
-        ----------
-        old_tick : float
-            The current tick before stepping.
-
-        """
-        # If schedule is empty, return current tick
-        if not self.schedule:
-            pass
-
-        # Checks if previous actions exist and, if so, removes them
-        while self.schedule[0].tick < old_tick:
-            self.schedule.pop(0)
-
-        # If schedule is empty after removing past actions, return current tick
-        if not self.schedule:
-            pass
-
-        # Load the first action in schedule
-        action = self.schedule[0]
-
-        # Step to next action tick and set the engine ticker to this
-        self.engine.tick = action.tick
-
-        # Calls action agent method
-        call_action(action)
-
-        # Checks if the action is recurring and, if so, schedules next instance
-        if action.interval > 0.0:
-            nextAction = Action(
-                tick=action.tick + action.interval,
-                agent=action.agent,
-                method=action.method,
-                args=action.args,
-                interval=action.interval,
-            )
-            self.schedule_action(nextAction)
-
-        # Remove the executed action from the schedule
-        self.schedule.pop(0)
-
-    def end_step(self):
-        """
-
-        Returns
-        -------
-
-        """
-        # If schedule is empty, return current tick
-        if not self.end_schedule:
-            pass
-
-        # Load the first action in schedule
-        action = self.end_schedule[0]
-
-        # Calls action agent method
-        call_action(action)
-
-        # Remove the executed action from the schedule
-        self.end_schedule.pop(0)
-
-
-    def remove_agent_from_list(self, target):
+    def remove_agent_from_list(self, target, end_actions: bool = True):
         """
         Removes all actions related to the target agent. This is useful if an agent has become obsolete, e.g. killed.
 
@@ -217,22 +147,33 @@ class Schedule:
         ----------
         target : Agent
             The agent whose actions are to be removed.
+
+        end_actions : bool, optional
+            Whether to also remove the agent's end actions. Default is True.
         """
-        self.schedule = SortedList(
-            [action for action in self.schedule if action.agent != target],
+        self.run_schedule = SortedList(
+            [action for action in self.run_schedule if action.agent != target],
             key=lambda action: (action.tick, action.priority),
         )
 
-    def print_schedule(self):
+        if end_actions:
+            self.end_schedule = SortedList(
+                [action for action in self.end_schedule if action.agent != target],
+                key=lambda action: (action.tick, action.priority),
+            )
+
+    def print_run_schedule(self):
         """
-        Prints all actions in the schedule.
+        Prints all actions in the run_schedule.
         """
 
-        for action in self.schedule:
+        for action in self.run_schedule:
             print(action)
 
-    def clear_schedule(self):
+    def print_end_schedule(self):
         """
-        Clears the schedule.
+        Prints all actions in the end_schedule.
         """
-        self.schedule.clear()
+
+        for action in self.end_schedule:
+            print(action)
