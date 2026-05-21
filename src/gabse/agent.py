@@ -57,9 +57,6 @@ class Agent:
         The sensor associated with the agent.
     """
 
-    # Static variable to keep track of agent IDs
-    #_id_counter = 0
-
     # Initialize agent with unique ID, position, engine reference, and empty sensor
     def __init__(self,
                  engine: "Engine",
@@ -68,7 +65,6 @@ class Agent:
                  orientation: NDArray[np.float64] | None = None,
                  sensor: Sensor = None
                  ):
-        #Agent._id_counter += 1
         # Generate a unique agent_id at instantiation time when not provided.
         # (Avoid evaluating nanoid.generate at function-definition time which would
         # produce the same default for every instance.)
@@ -92,32 +88,34 @@ class Agent:
 
         self.sensor = sensor
 
-    def find_neighbours(self, agents: Sequence["Agent"], noOfNeighbours: int) -> list | Any:
+    def find_neighbours(self, agents: Sequence["Agent"], n_neighbors: int) -> list | Any:
         """
-        Calculates the distance between *self* and a list of *agents*, neighbors, based on Euclidean distance. It then
-        filters out based on the number of neighbors to include, minimum one.
+        Finds the *n_neighbors* nearest agents from *agents* using Euclidean distance.
+        The calling agent is automatically excluded from the candidate list so an
+        agent is never returned as its own neighbor.
 
         Parameters
         ----------
-        agents : Iterable
-            A list of agents for which to calculate distance with.
-        noOfNeighbours : int
-            The number of closest neighbors to include.
+        agents : Sequence[Agent]
+            The pool of agents to search among.
+        n_neighbors : int
+            The number of closest neighbors to return.
 
         Returns
         -------
-        neighbours : list or Any
-            A list of nearest agents, or single agent if *noOfNeighbours == 1*
+        neighbours : list or Agent
+            A list of nearest agents, or a single agent if *n_neighbors == 1*.
         """
-        if not agents:
-            return [] if noOfNeighbours != 1 else None
 
-        agents = list(agents)
+        # Exclude self so the calling agent is never its own neighbor
+        agents = [a for a in agents if a is not self]
+
+        if not agents:
+            return [] if n_neighbors != 1 else None
 
         n = len(agents)
-        k = min(noOfNeighbours, n)
+        k = min(n_neighbors, n)
 
-        # Try KDTree for large n or repeated queries
         pos = np.vstack([a.position for a in agents])
         tree = _cKDTree(pos)
         dists, idxs = tree.query(self.position, k=k)
@@ -134,12 +132,15 @@ class Agent:
 
     def check_out_of_bounds(self) -> NDArray[np.float64]:
         """
-        Checks if the agent is outside the simulation context and if so moves it to the closest point within the context.
+        Clamps the agent's position to the simulation context boundaries and returns the result.
+
+        Expects engine.context.dimensions to be a 6-element array in the form
+        [x_min, y_min, z_min, x_max, y_max, z_max].
 
         Returns
         -------
         position : NDArray[np.float64]
-            The new position, unchanged if original position is within bounds.
+            The clamped position; unchanged if the agent was already within bounds.
         """
         bounds = np.array(self.engine.context.dimensions)
 
@@ -188,21 +189,18 @@ class Agent:
             self.orientation += rotation_vector
 
 
-    # Calculate Euclidean distance between two agents
-    def calculate_distance(self, agent2: "Agent") -> floating[Any]:
+    def calculate_distance(self, other_agent: "Agent") -> floating[Any]:
         """
-        Calculates the Euclidean distance between two points.
+        Calculates the Euclidean distance between this agent and *other_agent*.
 
         Parameters
         ----------
-        self : Agent
-            The first point.
-        agent2 : Agent
-            The second point.
+        other_agent : Agent
+            The agent to measure the distance to.
 
         Returns
         -------
         dist : floating[Any]
-            The distance
+            The Euclidean distance between the two agents.
         """
-        return np.linalg.norm(self.position - agent2.position)
+        return np.linalg.norm(self.position - other_agent.position)
