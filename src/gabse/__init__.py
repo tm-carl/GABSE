@@ -9,14 +9,14 @@ This is the GABSE (Generic Agent-Based Simulation for Engineering) framework.
 __name__ = "gabse"
 __author__ = "Carl Toller Melén"
 __version__ = "0.1.9"
-__email__ = ""
+__email__ = "carl@tollermelen.se"
 __status__ = "Development"
 
 from .engine import Engine
-from .agent import Agent
+from .agent import Agent, Sensor
 from .schedule import Action, Schedule
 from .context import Context
-from .data import Sensor, DataCollector
+from .data import DataCollector
 from .visualize import Visualizer
 
 __all__ = [

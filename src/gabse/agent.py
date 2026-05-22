@@ -3,23 +3,20 @@ This module contains the simulation agent class.
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, cast, List
-from typing import Any, Sequence
+
+from typing import TYPE_CHECKING, Any, Sequence
 
 if TYPE_CHECKING:
     from .engine import Engine
 
 # %%
 # Import required packages
-import numpy as np
 import nanoid
-from .data import Sensor
+import numpy as np
 from numpy import floating
 from numpy.typing import NDArray
 from scipy.spatial import cKDTree as _cKDTree
-
-
-
+import copy
 
 
 # %%
@@ -215,7 +212,6 @@ class Agent:
         orientation : NDArray[np.float64], optional
             The new orientation of the agent.
         """
-        old_position = self.position
 
         self.position = position
         self.position = self.check_out_of_bounds()
@@ -237,8 +233,6 @@ class Agent:
         rotation_vector : NDArray[np.float64], optional
             The rotation vector.
         """
-        old_position = self.position
-
         self.position += move_vector
         self.position = self.check_out_of_bounds()
         # print(self.position)
@@ -264,3 +258,73 @@ class Agent:
             The Euclidean distance between the two agents.
         """
         return np.linalg.norm(self.position - other_agent.position)
+
+# %%
+class Sensor:
+    """
+    A class representing a sensor that logs data from an agent over time. The sensor logs the sensory data based on the
+    getter list that is fed as arguments when the sensor is added to the run_schedule.
+
+    Parameters
+    ----------
+    parent : Agent
+        The agent to which the sensor is attached.
+    frequency : float
+        The frequency at which the sensor logs data.
+
+    Attributes
+    ----------
+    parent : Agent | Context
+        The agent or context to which the sensor is attached.
+    logger : dict
+        A dictionary to store logged data entries with the tick as the key and the data entry as the value.
+    frequency : float
+        The frequency at which the sensor logs data.
+    """
+
+    # Initializes the sensor with engine reference, parent agent, empty logger, and frequency
+    def __init__(self, parent: "Agent", frequency: float):
+        self.parent = parent
+        self.logger = dict()
+        self.frequency = frequency
+
+    # Logs data entries based on specified getters
+    def entry(self, *getters: list):
+        """
+        Logs a data entry by calling specified getter methods from the parent agent.
+
+        Parameters
+        ----------
+        getters : list
+            A list of names of all the getter method to call.
+        """
+        entry = dict()
+
+        for arg in getters:
+            data = getattr(self.parent, arg)
+
+            # check if data is numpy array and convert to list
+            if isinstance(data, np.ndarray):
+                data = (data.tolist())  # to avoid reference issues with mutable data types
+            else:
+                data = copy.copy(data)  # to avoid reference issues with mutable data types
+
+
+            entry[arg] = data
+
+        self.logger[self.parent.engine.tick] = entry
+        # print(self.engine.getTick())
+
+    def merge_logger(self, other_logger: dict):
+        """
+        Merges another logger into this sensor's logger and sorts the combined log by tick.
+
+        Parameters
+        ----------
+        other_logger : dict
+            The logger to be merged.
+        """
+        self.logger |= other_logger
+
+        # Sort the logger by tick to maintain chronological order
+        self.logger = dict(sorted(self.logger.items()))
