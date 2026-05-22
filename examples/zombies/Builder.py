@@ -9,6 +9,9 @@ Created on Mon Oct 27 10:46:12 2025
 # Import required packages
 import numpy as np
 
+from src.gabse import Context
+
+
 # Note: imports that depend on the project `src` directory are done inside methods.
 # This avoids import errors when worker processes spawn without PYTHONPATH set.
 
@@ -31,7 +34,10 @@ class Builder:
         # Use the installed or local `gabse` package - runner sets PYTHONPATH to the repo `src` directory.
         import src.gabse as gabse
 
-        self.engine = gabse.Engine(self.model_time, self.dimensions)
+        context = Context(dimensions=np.array([-100.0, -100.0, 1.0, 100.0, 100.0, 1.0]),
+                          grid_cell_size=1)
+
+        self.engine = gabse.Engine(self.model_time, context)
         self.context = self.engine.context
 
         # Set up the simulation context with agents

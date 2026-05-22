@@ -1,7 +1,7 @@
 """
 This module contains the simulation engine class.
 """
-
+import numpy as np
 
 # %%
 # Import required packages
@@ -106,7 +106,7 @@ class Engine:
 
 
         # At the end of the simulation, iterate through end actions assigned (allowing for final events to occur)
-        while len(self.schedule.end_schedule) > 0:
+        while len(self.schedule.post_process) > 0:
             self.end_step()
 
         # Return collected KPIs and data based on the value of no_arg_out
@@ -181,19 +181,19 @@ class Engine:
 
     def end_step(self):
         """
-        Executes the next action in the end-of-simulation queue (``end_schedule``).
+        Executes the next action in the end-of-simulation queue (``post_process``).
         Called by the engine after the main run_schedule is exhausted or the simulation
         is aborted, allowing final cleanup or summary actions to run.
         """
-        # Guard: return early if the end_schedule is empty
-        if not self.schedule.end_schedule:
+        # Guard: return early if the post_process is empty
+        if not self.schedule.post_process:
             return
 
         # Load the first action in run_schedule
-        action = self.schedule.end_schedule[0]
+        action = self.schedule.post_process[0]
 
         # Calls action agent method
         call_action(action)
 
         # Remove the executed action from the run_schedule
-        self.schedule.end_schedule.pop(0)
+        self.schedule.post_process.pop(0)

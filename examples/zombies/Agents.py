@@ -5,9 +5,10 @@ import src.gabse as gabse
 
 
 class Person(gabse.Agent):
-    def __init__(self, speed, engine, position=np.array([0, 0, 0])):
+    def __init__(self, speed, engine, position=np.array([0, 0, 0]), view_distance: float = 5.0):
         self.speed = speed
         self.alive = True
+        self.view_distance = view_distance
 
         super().__init__(engine, position=position)
 
@@ -33,27 +34,25 @@ class Person(gabse.Agent):
         return list(zombies)
 
     def find_closest_zombie(self):
-        closestZombie = self.find_neighbours(self.get_zombies(), 1)
-        return closestZombie
+        close_zombies: list = [z for z in self.find_grid_neighbours(self.view_distance) if isinstance(z, Zombie)]
+        closest_zombie: list | None = self.find_neighbours(close_zombies, 1)
+
+        return closest_zombie
 
     # Run method for the Person agent
     def run(self):
         # Find the closest zombie
         ngh = self.find_closest_zombie()
 
-        # Calculate distance vector to the closest zombie
-        distVector = ngh.position - self.position
+        if ngh:
+            # Calculate distance vector to the closest zombie
+            distVector = ngh[0].position - self.position
 
-        # Calculate the norm of the distance vector
-        norm = np.linalg.norm(distVector)
-
-        # Run away if the zombie is within 10 units and not at the same position
-        if norm < 10.0 and norm != 0.0:
+            # Run away if the zombie is within 10 units and not at the same position
             normVector = distVector / np.linalg.norm(distVector)
             runVector = normVector * -1 * self.speed
             self.move_vector(runVector)
 
-        # print(self.getPosition())
 
 
 class Zombie(gabse.Agent):
@@ -75,28 +74,20 @@ class Zombie(gabse.Agent):
         )
         self.engine.schedule.schedule_action(a)
 
-    def get_persons(self):
-        p = filter(
-            lambda x: x.__class__.__name__ == "Person", self.engine.context.agents.values()
-        )
 
-        return list(filter(lambda x: x.alive, p))
+    def find_closest_persons(self, noOfNeighbours: int = 1) -> list:
+        close_persons = [p for p in self.engine.context.agents.values() if isinstance(p, Person) and p.alive]
+        closest_person = self.find_neighbours(close_persons, 1)
 
-    def find_closest_persons(self, noOfNeighbours: int = 1) -> list | Person:
-        closestPerson = self.find_neighbours(self.get_persons(), noOfNeighbours)
-        if noOfNeighbours == 1:
-            return closestPerson
-        else:
-            return list(closestPerson)
+        return closest_person
 
     def hunt(self):
         ngh = self.find_closest_persons()
 
         # Check if all people are dead
-        if ngh == "":
-            self.engine.abort()
-        else:
-            distVector = ngh.position - self.position
+        if ngh:
+            victim = ngh[0]
+            distVector = victim.position - self.position
 
             norm = np.linalg.norm(distVector)
 
@@ -110,8 +101,15 @@ class Zombie(gabse.Agent):
 
             self.move_vector(runVector)
 
-            if self.calculate_distance(ngh) < 1.0:
-                self.kill(ngh)
+            if self.calculate_distance(victim) < 1.0:
+                self.kill(victim)
+        else:
+            temp = self.engine.context.agents
+            persons_left = [p for p in self.engine.context.agents.values() if isinstance(p, Person) and p.alive]
+
+            if len(persons_left) == 0:
+                print("The world is lost... everyone is a zombie")
+                self.engine.abort()
 
 
     def kill(self, victim):
@@ -132,11 +130,10 @@ class Zombie(gabse.Agent):
 
         self.engine.context.remove_agent(victim)
 
-        # agents = ["Zombie", "Person"]
-        counts = self.get_persons()
 
-        if len(counts) == 0:
-            #print("The world is lost... everyone is a zombie")
+
+        if len([p for p in self.engine.context.agents.values() if isinstance(p, Person)]) == 0:
+            print("The world is lost... everyone is a zombie")
             self.engine.abort()
 
 
@@ -170,6 +167,9 @@ class Logger(gabse.Agent):
         # Calculate the kill rate based on the number of zombies and people in the context at start and current time
         # The initial number of people is stored in the sensor logger when the Logger agent is initialized
         # Gets the initial counts from the sensor logger
+
+        print(self.engine.tick)
+
         first_key = next(iter(self.sensor.logger))
         init_person_count = self.sensor.logger.get(first_key).get("agent_counts")["Person"]
         init_zombie_count = self.sensor.logger.get(first_key).get("agent_counts")["Zombie"]

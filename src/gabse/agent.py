@@ -3,7 +3,7 @@ This module contains the simulation agent class.
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast, List
 from typing import Any, Sequence
 
 if TYPE_CHECKING:
@@ -59,6 +59,8 @@ class Agent:
         The sensor associated with the agent.
     """
 
+    _GRID_OFFSET_CACHE = {}
+
     # Initialize agent with unique ID, position, engine reference, and empty sensor
     def __init__(self,
                  engine: "Engine",
@@ -90,7 +92,7 @@ class Agent:
 
         self.sensor = sensor
 
-    def find_neighbours(self, agents: Sequence["Agent"], n_neighbors: int) -> list | Any:
+    def find_neighbours(self, agents: Sequence["Agent"], n_neighbors: int) -> list | None:
         """
         Finds the *n_neighbors* nearest agents from *agents* using Euclidean distance.
         The calling agent is automatically excluded from the candidate list so an
@@ -105,15 +107,16 @@ class Agent:
 
         Returns
         -------
-        neighbours : list or Agent
-            A list of nearest agents, or a single agent if *n_neighbors == 1*.
+        neighbours : list
+            A list of nearest agents, also if *n_neighbors == 1*.
         """
 
         # Exclude self so the calling agent is never its own neighbor
-        agents = [a for a in agents if a is not self]
+        if self in agents:
+            agents = [a for a in agents if a is not self]
 
         if not agents:
-            return [] if n_neighbors != 1 else None
+            return None
 
         n = len(agents)
         k = min(n_neighbors, n)
@@ -122,15 +125,64 @@ class Agent:
         tree = _cKDTree(pos)
         dists, idxs = tree.query(self.position, k=k)
         if k == 1:
-            return agents[int(idxs)]
-
-        if np.isscalar(idxs):
-            idxs = [int(idxs)]
+            result: list = [agents[int(idxs)]]
         else:
-            idxs = [int(i) for i in np.atleast_1d(idxs)]
+            if np.isscalar(idxs):
+                idxs = [int(idxs)]
+            else:
+                idxs = [int(i) for i in np.atleast_1d(idxs)]
 
-        return [agents[i] for i in idxs]
+            result: list = [agents[i] for i in idxs]
+        return result
 
+    def find_grid_neighbours(self, search_boundary: float = 1.0) -> list:
+        """
+        Finds neighboring agents using the grid-based neighbor search. The calling agent is automatically excluded
+        from the candidate list so an agent is never returned as its own neighbor.
+
+        Parameters
+        ----------
+        search_boundary : float
+            The width of the search area around the agent, in the same units as the agent's position. The
+            search will include all grid cells that are within this distance from the agent's current cell.
+
+        Returns
+        -------
+        neighbor_agents : list or Agent
+            A list of nearest agents within the specified boundary.
+
+        """
+
+        cell = self.engine.context.agent_grid_cells[self.agent_id]
+        grid = self.engine.context.grid
+        cx, cy, cz = cell
+
+        radius = int(search_boundary)
+
+        # Check of grid offset already exist, otherwise generate
+        if radius in self._GRID_OFFSET_CACHE:
+            offsets = self._GRID_OFFSET_CACHE[radius]
+        else:
+            r_range = range(-radius, radius + 1)
+            offsets = [
+                (dx, dy, dz)
+                for dx in r_range
+                for dy in r_range
+                for dz in r_range
+            ]
+            self._GRID_OFFSET_CACHE[radius] = offsets
+
+        # Generate export list
+        neighbor_agents = []
+        extend = neighbor_agents.extend
+
+        # Search the grids for agents
+        for dx, dy, dz in offsets:
+            cell_agents = grid.get((cx + dx, cy + dy, cz + dz))
+            if cell_agents:
+                extend([agent for agent in cell_agents if agent is not self])
+
+        return neighbor_agents
 
     def check_out_of_bounds(self) -> NDArray[np.float64]:
         """
@@ -163,13 +215,15 @@ class Agent:
         orientation : NDArray[np.float64], optional
             The new orientation of the agent.
         """
+        old_position = self.position
+
         self.position = position
         self.position = self.check_out_of_bounds()
-        # print(self.position)
 
         if orientation is not None:
             self.orientation = orientation
 
+        self.engine.context.update_agent_grid(self)
 
     def move_vector(self, move_vector: NDArray[np.float64], rotation_vector: NDArray[np.float64] = None):
         """
@@ -183,12 +237,16 @@ class Agent:
         rotation_vector : NDArray[np.float64], optional
             The rotation vector.
         """
+        old_position = self.position
+
         self.position += move_vector
         self.position = self.check_out_of_bounds()
         # print(self.position)
 
         if rotation_vector is not None:
             self.orientation += rotation_vector
+
+        self.engine.context.update_agent_grid(self)
 
 
     def calculate_distance(self, other_agent: "Agent") -> floating[Any]:

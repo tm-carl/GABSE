@@ -88,13 +88,13 @@ class Schedule:
     run_schedule: SortedList
         A sorted list of scheduled actions, ordered by tick and priority.
 
-    end_schedule: SortedList
+    post_process: SortedList
         A sorted list of end actions that are executed at the end of the simulation, ordered by priority.
     """
 
     def __init__(self):
         self.run_schedule = SortedList(key=lambda a: (a.tick, a.priority))
-        self.end_schedule = SortedList(key=lambda a: a.priority)
+        self.post_process = SortedList(key=lambda a: a.priority)
 
     # Schedule method for adding an action in run_schedule
     def schedule_action(self, action: Action):
@@ -119,7 +119,7 @@ class Schedule:
             )
         self.run_schedule.add(action)
 
-    def schedule_end_action(self, action: Action):
+    def schedule_post_process(self, action: Action):
         """
         Schedules an end action that will be executed at the end of the simulation, after all regular actions have been executed.
 
@@ -137,9 +137,9 @@ class Schedule:
             raise AttributeError(
                 f"Agent '{type(action.agent).__name__}' has no method '{action.method}'."
             )
-        self.end_schedule.add(action)
+        self.post_process.add(action)
 
-    def remove_agent_from_list(self, target, end_actions: bool = True):
+    def remove_agent_from_list(self, target, remove_post_process: bool = True):
         """
         Removes all actions related to the target agent. This is useful if an agent has become obsolete, e.g. killed.
 
@@ -148,7 +148,7 @@ class Schedule:
         target : Agent
             The agent whose actions are to be removed.
 
-        end_actions : bool, optional
+        remove_post_process : bool, optional
             Whether to also remove the agent's end actions. Default is True.
         """
         self.run_schedule = SortedList(
@@ -156,9 +156,9 @@ class Schedule:
             key=lambda action: (action.tick, action.priority),
         )
 
-        if end_actions:
-            self.end_schedule = SortedList(
-                [action for action in self.end_schedule if action.agent != target],
+        if remove_post_process:
+            self.post_process = SortedList(
+                [action for action in self.post_process if action.agent != target],
                 key=lambda action: (action.tick, action.priority),
             )
 
@@ -172,8 +172,8 @@ class Schedule:
 
     def print_end_schedule(self):
         """
-        Prints all actions in the end_schedule.
+        Prints all actions in the post_process.
         """
 
-        for action in self.end_schedule:
+        for action in self.post_process:
             print(action)

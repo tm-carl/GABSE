@@ -31,8 +31,8 @@ class Sensor:
 
     Attributes
     ----------
-    parent : Agent
-        The agent to which the sensor is attached.
+    parent : Agent | Context
+        The agent or context to which the sensor is attached.
     logger : dict
         A dictionary to store logged data entries with the tick as the key and the data entry as the value.
     frequency : float
@@ -59,7 +59,7 @@ class Sensor:
 
         for arg in getters:
             data = getattr(self.parent, arg)
-            #print(data)
+
             # check if data is numpy array and convert to list
             if isinstance(data, np.ndarray):
                 data = (data.tolist())  # to avoid reference issues with mutable data types
@@ -155,7 +155,7 @@ class DataCollector:
         """
         return self.repo
 
-    def collect_kpis(self, tick: float, context: Context, agents: dict[str, "Agent"]):
+    def collect_kpis(self, tick: float, context: "Context", agents: dict[str, "Agent"]):
         """
         Collects a key performance indicators (KPIs) and stores it in the KPI repository.
 
