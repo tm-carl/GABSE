@@ -17,8 +17,10 @@ class Context:
 
     Parameters
     ----------
-    dimensions: NDArray[np.float64]
-        The dimensions of the simulation environment.
+    dimensions : NDArray[np.float64], optional
+        The dimensions of the simulation environment, based on 3D representation. If no dimensions are provided,
+        it will use an unbonded set (-Inf to Inf). The order of XYZ boundaries is done
+        the following: *[X-min, Y-min, Z-min, X-max, Y-max, Z-max]*
 
     Attributes
     ----------
@@ -29,7 +31,7 @@ class Context:
 
     """
     # Initializes the context with dimensions and empty agent list
-    def __init__(self, dimensions: NDArray[np.float64]):
+    def __init__(self, dimensions: NDArray[np.float64] = np.array([-np.inf, -np.inf, -np.inf, np.inf, np.inf, np.inf])):
         self.dimensions = dimensions
         self.grid = None
         #self.agents: list[Agent] = []

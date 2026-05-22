@@ -5,12 +5,9 @@ This module contains the simulation engine class.
 
 # %%
 # Import required packages
-import numpy as np
-
 from .data import DataCollector
 from .context import Context
 from .schedule import Schedule, Action
-from numpy.typing import NDArray
 
 #%%
 
@@ -49,9 +46,6 @@ class Engine:
     ----------
     model_time : float
         The total time for which the simulation will run.
-    dimensions : NDArray[np.float64]
-        The dimensions of the simulation environment, based on 3D representation. The order of XYZ boundaries is done
-        the following: *[X-min, Y-min, Z-min, X-max, Y-max, Z-max]*
     context : Context, optional
         The context to be used, if custom. Default is to use the built-in context.
 
@@ -61,8 +55,6 @@ class Engine:
         The current simulation tick.
     model_time : float
         The total time for which the simulation will run.
-    dimensions : NDArray[np.float64]
-        The dimensions of the simulation environment.
     context : Context | Any
         The context containing the agents and environment of the simulation. Can also be a child class of Context class.
     schedule : Schedule
@@ -74,22 +66,15 @@ class Engine:
     def __init__(
             self,
             model_time: float,
-            dimensions: NDArray[np.float64],
-            context: Context = None
+            context: Context
             ):
 
         self.tick = 0.0
         self.model_time = model_time
         self.schedule = Schedule()
         self.data_logger = DataCollector()
-        self.dimensions = dimensions
         self.aborted = False
-
-        # Initialize context, allowing for custom context to be passed
-        if context is None:
-            self.context = Context(dimensions)
-        else:
-            self.context = context
+        self.context = context
 
     def run(self, no_arg_out:int = 0) -> None | dict | tuple:
         """
