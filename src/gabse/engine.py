@@ -1,8 +1,6 @@
 """
 This module contains the simulation engine class.
 """
-import numpy as np
-
 # %%
 # Import required packages
 from .data import DataCollector

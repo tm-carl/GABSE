@@ -27,6 +27,12 @@ class Context:
     ----------
     dimensions: NDArray[np.float64]
         The dimensions of the simulation environment.
+    grid : dict[str, set]
+        A sparse grid for tracking agent locations.
+    agent_grid_cells : dict[str, set]
+        A reverse look-up table to know in which cell a specific agent is.
+    grid_cell_size : float
+        The size of each grid cell for spatial partitioning.
     agents: list
         A list of agents present in the simulation.
 
@@ -39,8 +45,9 @@ class Context:
             ):
         self.dimensions = dimensions
         self.grid = defaultdict(set)
-        self.agent_grid_cells = {}      # Reverse look-up table to know in which cell a specific agent is
+        self.agent_grid_cells = {}
         self.grid_cell_size = grid_cell_size
+
         self.agents: dict[str, Agent] = {}
 
     def get_grid_cell(self, pos):
