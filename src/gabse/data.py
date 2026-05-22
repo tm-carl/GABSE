@@ -2,16 +2,18 @@
 This module contains the operational data classes.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .agent import Agent
+    from .context import Context
+
 # %%
 # Import required packages
 import numpy as np
 import copy
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .engine import Engine
-    from .agent import Agent
-    from .context import Context
 
 
 # %%
@@ -117,7 +119,7 @@ class DataCollector:
             agent.sensor.logger
         )
 
-    def collect_data(self, agents: dict[str, Agent]):
+    def collect_data(self, agents: dict[str, "Agent"]):
         """
         Collects data from all agents' sensors and stores it in the repository. This method iterates through all
         agents in the simulation context, retrieves their logs from their sensors, and stores them in the repository
@@ -153,7 +155,7 @@ class DataCollector:
         """
         return self.repo
 
-    def collect_kpis(self, tick: float, context: Context, agents: dict[str, Agent]):
+    def collect_kpis(self, tick: float, context: Context, agents: dict[str, "Agent"]):
         """
         Collects a key performance indicators (KPIs) and stores it in the KPI repository.
 

@@ -2,7 +2,12 @@
 This module contains the simulation agent class.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from typing import Any, Sequence
+
+if TYPE_CHECKING:
+    from .engine import Engine
 
 # %%
 # Import required packages
@@ -14,10 +19,7 @@ from numpy.typing import NDArray
 from scipy.spatial import cKDTree as _cKDTree
 
 
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .engine import Engine
 
 
 # %%
@@ -63,7 +65,7 @@ class Agent:
                  agent_id: str | None = None,
                  position: NDArray[np.float64] | None = None,
                  orientation: NDArray[np.float64] | None = None,
-                 sensor: Sensor = None
+                 sensor: "Sensor" = None
                  ):
         # Generate a unique agent_id at instantiation time when not provided.
         # (Avoid evaluating nanoid.generate at function-definition time which would
