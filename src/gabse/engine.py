@@ -1,7 +1,8 @@
 """
 This module contains the simulation engine class.
 """
-# %%
+from tqdm import tqdm
+
 # Import required packages
 from .data import DataCollector
 from .context import Context
@@ -64,7 +65,8 @@ class Engine:
     def __init__(
             self,
             model_time: float,
-            context: Context
+            context: Context,
+            progress_bar: bool = False,
             ):
 
         self.tick = 0.0
@@ -73,6 +75,14 @@ class Engine:
         self.data_logger = DataCollector()
         self.aborted = False
         self.context = context
+
+        # TDQM stuff
+        self.progress_bar = progress_bar
+
+        if progress_bar:
+            self.last_time = 0.0
+            self.total_time = model_time
+            self.pbar = tqdm(total=self.total_time, desc="Simulation progress bar", leave=True, position=0)
 
     def run(self, no_arg_out:int = 0) -> None | dict | tuple:
         """
@@ -102,6 +112,17 @@ class Engine:
         while self.tick <= self.model_time and len(self.schedule.run_schedule) > 0 and not self.aborted:
             self.step(self.tick)
 
+            # Update progress bar if enabled
+            if self.progress_bar:
+                time_increment = self.tick - self.last_time
+
+                if time_increment > 0:
+                    self.pbar.update(time_increment)
+                    self.last_time = self.tick
+
+                if self.tick > self.model_time:
+                    self.pbar.close()
+
 
         # At the end of the simulation, iterate through end actions assigned (allowing for final events to occur)
         while len(self.schedule.post_process) > 0:
@@ -129,7 +150,13 @@ class Engine:
         """
         self.schedule.run_schedule.clear()
         self.aborted = True
-        #print(f"Stopped at: {self.tick}")
+
+        # Updates the progress bar to read 100%
+        if self.progress_bar:
+            self.pbar.total = self.last_time
+            self.pbar.set_description("Simulation progress bar (Aborted)")
+            self.pbar.refresh()
+            self.pbar.close()
 
     def step(self, old_tick):
         """

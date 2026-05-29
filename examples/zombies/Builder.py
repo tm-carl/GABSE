@@ -21,7 +21,7 @@ from src.gabse import Context
 
 
 class Builder:
-    def __init__(self, model_time=10000.0, person_quantity=100, person_speed=1, zombie_quantity=1, zombie_speed=1):
+    def __init__(self, model_time=10000.0, person_quantity=100, person_speed=1, zombie_quantity=1, zombie_speed=1, progress_bar=False):
         # Simulation parameters
         self.model_time = model_time
         self.person_quantity = person_quantity
@@ -37,7 +37,7 @@ class Builder:
         context = Context(dimensions=np.array([-100.0, -100.0, 1.0, 100.0, 100.0, 1.0]),
                           grid_cell_size=1)
 
-        self.engine = gabse.Engine(self.model_time, context)
+        self.engine = gabse.Engine(self.model_time, context, progress_bar)
         self.context = self.engine.context
 
         # Set up the simulation context with agents

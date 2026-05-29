@@ -16,13 +16,16 @@ model_time=1000
 person_quantity=10
 person_speed=1
 zombie_quantity=1
-zombie_speed=1
+zombie_speed=0.01
+progress_bar = True
 
-print("Starting simulation...")
-b = Builder.Builder(model_time, person_quantity, person_speed, zombie_quantity, zombie_speed)
-print("Builder created. Running simulation...")
+#print("Starting simulation...")
+b = Builder.Builder(model_time, person_quantity, person_speed, zombie_quantity, zombie_speed, progress_bar)
+
+#print("Builder created. Running simulation...")
+
 (kpi, repo) = b.engine.run(2)
-print("Simulation run completed. Exporting data...")
+#print("Simulation run completed. Exporting data...")
 
 print("KPIs collected:")
 for k, v in kpi.items():
