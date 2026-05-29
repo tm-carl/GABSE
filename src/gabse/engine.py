@@ -150,6 +150,10 @@ class Engine:
         while self.schedule.run_schedule and self.schedule.run_schedule[0].tick < old_tick:
             self.schedule.run_schedule.pop(0)
 
+        # Remove and actions scheduled after the specified model time
+        while self.schedule.run_schedule and self.schedule.run_schedule[0].tick > self.model_time:
+            self.schedule.run_schedule.pop(0)
+
         # Guard: return early if all remaining actions were stale
         if not self.schedule.run_schedule:
             return
