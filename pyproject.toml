@@ -55,4 +55,3 @@ include = ["gabse"]
 
 [tool.setuptools.dynamic]
 version = { attr = "gabse.__version__" }
-tqdm
