@@ -1,7 +1,7 @@
 """
 Copyright (C), 2025, Carl Toller Melén
 
-This is the GABSE (Generic Agent-Based Simulation for Engineering) framework.
+This is the GABSE (Generic Agent-Based Simulation Engine) framework.
 
 """
 
