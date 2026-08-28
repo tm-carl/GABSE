@@ -66,9 +66,9 @@ class Builder:
             )
 
             # import Agents locally so module resolution uses the runner's sys.path setup
-            import Agents
+            from .Agents import Person, Zombie, Logger
 
-            p = Agents.Person(self.person_speed, self.engine, startPos)
+            p = Person(self.person_speed, self.engine, startPos)
             self.context.add_agent(p)
 
             a = gabse.Action(1, p, "run", interval=1.0)
@@ -84,13 +84,13 @@ class Builder:
                 ],
                 dtype="f",
             )
-            z = Agents.Zombie(self.zombie_speed, self.engine, startPos)
+            z = Zombie(self.zombie_speed, self.engine, startPos)
             self.context.add_agent(z)
 
             a = gabse.Action(1, z, "hunt", priority=10, interval=1.0)
             self.engine.schedule.schedule_action(a)
 
-        log_agent = Agents.Logger(self.engine)
+        log_agent = Logger(self.engine)
         self.context.add_agent(log_agent)
 
         # self.engine.run_schedule.printSchedule()
