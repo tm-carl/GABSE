@@ -40,8 +40,6 @@ class Agent:
         The 3D position of the agent in the simulation space. Default is [0, 0, 0].
     orientation : NDArray[np.float64], optional
         The 3D orientation of the agent in the simulation space. Default is [0, 0, 0].
-    sensor : Sensor, optional
-        The sensor associated with the agent. Default is None.
 
 
     Attributes
@@ -53,7 +51,7 @@ class Agent:
     engine: Engine
         Reference to the simulation engine.
     sensor: Sensor
-        The sensor associated with the agent.
+        The sensor associated with the agent. Default is None, sensors is added in child classes if needed.
     """
 
     _GRID_OFFSET_CACHE = {}
@@ -63,31 +61,30 @@ class Agent:
                  engine: "Engine",
                  agent_id: str | None = None,
                  position: NDArray[np.float64] | None = None,
-                 orientation: NDArray[np.float64] | None = None,
-                 sensor: "Sensor" = None
+                 orientation: NDArray[np.float64] | None = None
                  ):
+
         # Generate a unique agent_id at instantiation time when not provided.
-        # (Avoid evaluating nanoid.generate at function-definition time which would
-        # produce the same default for every instance.)
         if agent_id is None:
             agent_id = nanoid.generate(size=7)
 
         self.agent_id = agent_id
         self.engine = engine
 
-        # Avoid using mutable objects as default arguments. Create fresh arrays
-        # per instance when position/orientation not provided.
+        # Sets the initial position of the agent, defaulting to [0, 0, 0] if not provided.
         if position is None:
             self.position = np.array([0, 0, 0], dtype=float)
         else:
             self.position = position
 
+        # Sets the initial orientation of the agent, defaulting to [0, 0, 0] if not provided.
         if orientation is None:
             self.orientation = np.array([0, 0, 0], dtype=float)
         else:
             self.orientation = orientation
 
-        self.sensor = sensor
+        # Initializes the sensor attribute to None, indicating that the agent does not have an associated sensor by default.
+        self.sensor = None
 
     def find_neighbours(self, agents: Sequence["Agent"], n_neighbors: int) -> list | None:
         """
@@ -269,8 +266,6 @@ class Sensor:
     ----------
     parent : Agent
         The agent to which the sensor is attached.
-    frequency : float
-        The frequency at which the sensor logs data.
 
     Attributes
     ----------
@@ -278,15 +273,12 @@ class Sensor:
         The agent or context to which the sensor is attached.
     logger : dict
         A dictionary to store logged data entries with the tick as the key and the data entry as the value.
-    frequency : float
-        The frequency at which the sensor logs data.
     """
 
     # Initializes the sensor with engine reference, parent agent, empty logger, and frequency
-    def __init__(self, parent: "Agent", frequency: float):
+    def __init__(self, parent: "Agent"):
         self.parent = parent
         self.logger = dict()
-        self.frequency = frequency
 
     # Logs data entries based on specified getters
     def entry(self, *getters: list):
@@ -317,7 +309,7 @@ class Sensor:
 
     def merge_logger(self, other_logger: dict):
         """
-        Merges another logger into this sensor's logger and sorts the combined log by tick.
+        Merges another logger into this sensor's logger and sorts the combined log by tick. 
 
         Parameters
         ----------
