@@ -14,3 +14,4 @@ __pycache__/
 /zombie_simulation_data.json
 *.pyc
 /examples/zombies/zombie_dash.py
+/.vscode/
