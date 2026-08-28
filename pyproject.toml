@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gabse"
 dynamic = ["version"]
-description = "The GABSE (Generic Agent-Based Simulation for Engineering) framework"
+description = "The GABSE (Generic Agent-Based Simulation Engine) framework"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
