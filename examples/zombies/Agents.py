@@ -13,17 +13,17 @@ class Person(gabse.Agent):
         super().__init__(engine, position=position)
 
         freq = 1.0
-        self.sensor = gabse.Sensor(self, freq)
+        self.sensor = gabse.Sensor(self)
 
         getters = ["position", "alive"]
 
         a = gabse.Action(
-            self.engine.tick + 1,
-            self.sensor,
-            "entry",
-            getters,
-            np.iinfo(np.int32).max,
-            self.sensor.frequency,
+            tick=self.engine.tick + 1,
+            agent=self.sensor,
+            method="entry",
+            args=getters,
+            priority=np.iinfo(np.int32).max,
+            interval=freq,
         )
         self.engine.schedule.schedule_action(a)
 
@@ -61,7 +61,7 @@ class Zombie(gabse.Agent):
         super().__init__(engine, position=position)
 
         freq = 1.0
-        self.sensor = gabse.Sensor(self, freq)
+        self.sensor = gabse.Sensor(self)
         getters = ["position"]
 
         a = gabse.Action(
@@ -70,7 +70,7 @@ class Zombie(gabse.Agent):
             "entry",
             getters,
             np.iinfo(np.int32).max,
-            self.sensor.frequency,
+            freq,
         )
         self.engine.schedule.schedule_action(a)
 
@@ -140,7 +140,7 @@ class Zombie(gabse.Agent):
 class Logger(gabse.Agent):
     def __init__(self, engine, position=np.array([0, 0, 0])):
         super().__init__(engine, position=position)
-        sensor = gabse.Sensor(self, 1.0)
+        sensor = gabse.Sensor(self)
         self._agent_counts = self.agent_counts
         self.sensor = sensor
 
@@ -150,7 +150,7 @@ class Logger(gabse.Agent):
             "entry",
             ["agent_counts"],
             np.iinfo(np.int32).max,
-            sensor.frequency,
+            1.0,
         )
         self.engine.schedule.schedule_action(a)
 
