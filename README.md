@@ -1,5 +1,7 @@
 # GABSE
 
+![Logotype of GABSE](gabse_v2.png)
+
 This is the GABSE (Generic Agent-Based Simulation Engine) framework. It provides classes and methods for
 creating and managing simulations involving agents, their actions, sensors, and the simulation context. It is based on
 an agent-based modeling technique and is developed with the intention of being lightweight, scalable, and flexible.
