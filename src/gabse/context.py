@@ -33,8 +33,8 @@ class Context:
         A reverse look-up table to know in which cell a specific agent is.
     grid_cell_size : float
         The size of each grid cell for spatial partitioning.
-    agents: list
-        A list of agents present in the simulation.
+    agents: dict
+        A dictionary of agents present in the simulation.
 
     """
     # Initializes the context with dimensions and empty agent list
