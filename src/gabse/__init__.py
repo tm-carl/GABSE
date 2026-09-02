@@ -8,7 +8,7 @@ This is the GABSE (Generic Agent-Based Simulation Engine) framework.
 # version number
 __name__ = "gabse"
 __author__ = "Carl Toller Melén"
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 __email__ = "carl@tollermelen.se"
 __status__ = "Development"
 
