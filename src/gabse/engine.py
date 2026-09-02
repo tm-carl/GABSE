@@ -210,7 +210,7 @@ class Engine:
 
     def end_step(self):
         """
-        Executes the next action in the end-of-simulation queue (``post_process``).
+        Executes the next action in the end-of-simulation queue (*post_process*).
         Called by the engine after the main run_schedule is exhausted or the simulation
         is aborted, allowing final cleanup or summary actions to run.
         """
