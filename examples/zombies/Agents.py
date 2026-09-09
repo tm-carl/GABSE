@@ -168,7 +168,7 @@ class Logger(gabse.Agent):
         # The initial number of people is stored in the sensor logger when the Logger agent is initialized
         # Gets the initial counts from the sensor logger
 
-        print(self.engine.tick)
+        print(f"Current tick: {self.engine.tick}")
 
         first_key = next(iter(self.sensor.logger))
         init_person_count = self.sensor.logger.get(first_key).get("agent_counts")["Person"]
