@@ -6,8 +6,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Sequence
 
-from src.gabse import engine
-
 if TYPE_CHECKING:
     from .engine import Engine
 
