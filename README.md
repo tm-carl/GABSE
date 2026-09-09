@@ -8,42 +8,40 @@ an agent-based modeling technique and is developed with the intention of being l
 This package provides the engine, action scheduling, generic agent functionality, and tools for sensory data collection
 and management.
 
+You can find the package on PyPi [here](https://pypi.org/project/gabse/)
+
 ## Installation
 
 GABSE can be installed from PyPi using pip.
 
 Installation:
 
-```
+```python
 pip install gabse
 ```
 
 Update:
 
-```
+```python
 pip install gabse --upgrade
 ```
 
 Uninstall:
 
-```
+```python
 pip uninstall gabse
 ```
 
-You can find the GABSE at both PyPi and TestPyPi using these links:
-
-```
-https://pypi.org/project/gabse/
-https://test.pypi.org/project/gabse/
-```
 
 ### Dependencies
 
-GABSE has the following dependencies
+GABSE has the following dependencies (automatically installed with pip):
 
 - sortedcontainers
 - numpy
 - scipy
+- nanoid
+- tqdm
 
 ## Funactionality
 
