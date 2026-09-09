@@ -14,23 +14,13 @@ You can find the package on PyPi [here](https://pypi.org/project/gabse/)
 
 GABSE can be installed from PyPi using pip.
 
-Installation:
-
 ```python
 pip install gabse
 ```
-
-Update:
-
 ```python
 pip install gabse --upgrade
 ```
 
-Uninstall:
-
-```python
-pip uninstall gabse
-```
 
 
 ### Dependencies
