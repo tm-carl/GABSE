@@ -4,8 +4,7 @@
 #%%
 class Visualizer:
     """
-    A class representing a visualizer for the simulation. The visualizer is responsible for rendering the simulation
-    environment and agents in a graphical format.
+    A class representing a visualizer for the simulation. Currently, this class serves as a placeholder for future visualization functionality.
 
     Parameters
     ----------
@@ -20,12 +19,5 @@ class Visualizer:
 
     def __init__(self, engine):
         self.engine = engine
-
-    def render(self):
-        """
-        Renders the simulation environment and agents. This method should be implemented by subclasses to provide
-        specific visualization functionality.
-        """
-        raise NotImplementedError("The render method must be implemented by subclasses.")
 
 

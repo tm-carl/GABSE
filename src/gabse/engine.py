@@ -3,7 +3,6 @@ This module contains the simulation engine class.
 """
 from tqdm import tqdm
 
-# Import required packages
 from .data import DataCollector
 from .context import Context
 from .schedule import Schedule, Action
@@ -12,21 +11,23 @@ from .schedule import Schedule, Action
 
 def call_action(action: Action):
     """
-    Calls the method specified in the action on the agent with the provided arguments.
+    Calls the method specified in the action on the agent with the provided arguments. For more details about the Action class, see the documentation for the Action class.
 
     Parameters
     ----------
     action : Action
         The action to be called.
     """
+    # Get the method from the agent
     method = getattr(action.agent, action.method)
 
+    # Get the arguments for the method, if any
     args = []
 
     if action.args is not None:
         args = list(action.args)
 
-    # Check and call
+    # Check if the method is callable and call it
     if callable(method):
         if action.args is None or len(args) == 0:
             method()
@@ -47,6 +48,8 @@ class Engine:
         The total time for which the simulation will run.
     context : Context, optional
         The context to be used, if custom. Default is to use the built-in context.
+    progress_bar : bool, optional
+        Whether to display a progress bar during the simulation run. Default is False.
 
     Attributes
     ----------
@@ -57,9 +60,11 @@ class Engine:
     context : Context | Any
         The context containing the agents and environment of the simulation. Can also be a child class of Context class.
     schedule : Schedule
-        The run_schedule managing the actions to be executed.
+        The registry of actions to be executed, but during the simulation and post-simulation.
     aborted : bool
         Whether the simulation is aborted or not.
+    data_logger : DataCollector
+        The data collector for the simulation, which collects KPIs and log data after the simulation run.
     """
 
     def __init__(
@@ -75,8 +80,6 @@ class Engine:
         self.data_logger = DataCollector()
         self.aborted = False
         self.context = context
-
-        # TDQM stuff
         self.progress_bar = progress_bar
 
         if progress_bar:
@@ -86,26 +89,26 @@ class Engine:
 
     def run(self, no_arg_out:int = 0) -> None | dict | tuple:
         """
-        Runs the simulation until reached model time, run_schedule is empty, or simulation is aborted internally.
+        Runs the simulation until reached model time, schedule is empty, or simulation is aborted internally.
 
         Parameters
         ----------
         no_arg_out : int, optional
             The number of output arguments to return. Default is 0 (returns nothing). If 1, returns the collected KPIs
-            as a dictionary. If 2, returns a tuple containing the collected KPIs and the collected data as dictionaries.
+            as a dictionary. If 2, returns a tuple containing the collected KPIs and the collected log data as dictionaries.
 
         Returns
         -------
         None | dict | tuple
             The return value depends on the value of *no_arg_out*. If *no_arg_out* is 0, the method returns `None`.
             If *no_arg_out* is 1, it returns a dictionary containing the collected KPIs. If *no_arg_out* is 2, it
-            returns a tuple containing the collected KPIs and the collected data as dictionaries.
+            returns a tuple containing the collected KPIs and the collected log data as dictionaries.
         None
             If *no_arg_out* is 0, the method returns nothing.
         KPIs : dict
             The collected KPIs from the simulation, returned if *no_arg_out* is 1 or 2.
         data : dict
-            The collected data from the simulation, returned if *no_arg_out* is 2.
+            The collected log data from the simulation, returned if *no_arg_out* is 2.
         """
 
         # Continuously steps through the run_schedule until the model time is reached or the run_schedule is empty.
@@ -134,19 +137,18 @@ class Engine:
         elif no_arg_out == 1: # returns collected KPIs as a dictionary
             self.data_logger.collect_kpis(tick=self.tick, context=self.context, agents=self.context.agents)
             return self.data_logger.export_kpis()
-        elif no_arg_out == 2: # returns collected KPIs and data as a tuple of dictionaries
+        elif no_arg_out == 2: # returns collected KPIs and log data as a tuple of dictionaries
             self.data_logger.collect_kpis(tick=self.tick, context=self.context, agents=self.context.agents)
             self.data_logger.collect_data(agents=self.context.agents)
             return self.data_logger.export_kpis(), self.data_logger.export_data()
         else: # if no_arg_out is not 0, 1, or 2, returns nothing and prints a warning message.
             print("Warning: no_arg_out should be 0, 1, or 2. Returning nothing.")
             return None
-        # print("RUN COMPLETED!")
+        
 
     def abort(self):
         """
-        Aborts the simulation and prints the stopped time. If data collection is enabled, it will also collect the
-        data up to the point of abortion.
+        Aborts the simulation. This method clears the run_schedule, sets the aborted flag to True, and updates the progress bar to indicate that the simulation has been aborted effectively making the *run()* method exit its main loop and stop the simulation, including post-processing.
         """
         self.schedule.run_schedule.clear()
         self.aborted = True
@@ -160,8 +162,7 @@ class Engine:
 
     def step(self, old_tick):
         """
-        Steps one entry in the run_schedule. The step method executes the next action entry and, if reoccurring, re-schedules
-        it. It also moves the tick forward one instance, can be the same if multiple actions are scheduled at the same tick.
+        Steps one entry in the run_schedule. The step method executes the next action entry and, if reoccurring, re-schedules it. It also moves the tick forward one instance, can be the same if multiple actions are scheduled at the same tick.
 
         Parameters
         ----------
@@ -173,11 +174,11 @@ class Engine:
         if not self.schedule.run_schedule:
             return
 
-        # Remove any stale actions whose tick is earlier than the current engine tick
+        # Guard: Remove any stale actions whose tick is earlier than the current engine tick
         while self.schedule.run_schedule and self.schedule.run_schedule[0].tick < old_tick:
             self.schedule.run_schedule.pop(0)
 
-        # Remove and actions scheduled after the specified model time
+        # Guard: Remove any actions scheduled after the specified model time (i.e., actions that are beyond the simulation's time horizon)
         while self.schedule.run_schedule and self.schedule.run_schedule[0].tick > self.model_time:
             self.schedule.run_schedule.pop(0)
 
@@ -185,13 +186,13 @@ class Engine:
         if not self.schedule.run_schedule:
             return
 
-        # Load the first action in run_schedule
+        # Load the first action in run_schedule (sorted by tick and then by priority)
         action = self.schedule.run_schedule[0]
 
-        # Step to next action tick and set the engine ticker to this
+        # Step to the action tick in the simulation
         self.tick = action.tick
 
-        # Calls action agent method
+        # Call the action agent method
         call_action(action)
 
         # Checks if the action is recurring and, if so, schedules next instance
@@ -210,19 +211,17 @@ class Engine:
 
     def end_step(self):
         """
-        Executes the next action in the end-of-simulation queue (*post_process*).
-        Called by the engine after the main run_schedule is exhausted or the simulation
-        is aborted, allowing final cleanup or summary actions to run.
+        Executes the next action in the end-of-simulation queue (*post_process*). Called by the engine after the main *run_schedule* is exhausted or the simulation is aborted, allowing final cleanup or summary actions to run.
         """
         # Guard: return early if the post_process is empty
         if not self.schedule.post_process:
             return
 
-        # Load the first action in run_schedule
+        # Load the first action in post_process
         action = self.schedule.post_process[0]
 
-        # Calls action agent method
+        # Call the action agent method
         call_action(action)
 
-        # Remove the executed action from the run_schedule
+        # Remove the executed action from the post_process
         self.schedule.post_process.pop(0)

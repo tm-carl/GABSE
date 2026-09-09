@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Sequence
 
+from src.gabse import engine
+
 if TYPE_CHECKING:
     from .engine import Engine
 
@@ -22,20 +24,14 @@ import copy
 # %%
 class Agent:
     """
-    A class representing an agent in the simulation. An agent will possess a specific behavior that it executes during
-    the simulation. These behaviors are expressed using methods. A few standard methods for *Agent-Based Simulation (ABS)*
-    are automatically included.
-
-    The agent class is meant to be used as a parent class, i.e., any agent type that is to be used will be a child
-    class of *Agent*. The child class then inherits the *Agent* behavior to ensure that it is directly compatible
-    with the simulation engine and bring in standard *ABS* agent methods.
+    A class representing an agent in the simulation. The agent's behaviors are expressed using methods which can be called during the simulation using the action schedule. For each agent in a simulation model, a child class shall be created. To simplify the process of creating agent types, a base class is provided that includes common functionality and methods.
 
     Parameters
     ----------
     engine : Engine
         Reference to the simulation engine.
     agent_id : str, optional
-        Unique identifier for the agent. Default is to automatically generate a unique ID using nanoid with a size of 7.
+        Unique identifier for the agent. Default is to automatically generate a unique ID using *nanoid* with a size of 7.
     position : NDArray[np.float64], optional
         The 3D position of the agent in the simulation space. Default is [0, 0, 0].
     orientation : NDArray[np.float64], optional
@@ -44,32 +40,36 @@ class Agent:
 
     Attributes
     ----------
-    agent_id: str
-        Unique identifier for the agent, either assigned or automatically generated using nanoid with a size 7.
-    position: np.ndarray
-        The 3D position of the agent in the simulation space.
     engine: Engine
-        Reference to the simulation engine.
+            Reference to the simulation engine.
+    agent_id: str
+        Unique identifier for the agent, either assigned or automatically generated using *nanoid* with a size of 7.
+    position: NDArray[np.float64]
+        The 3D position of the agent in the simulation space.
+    orientation: NDArray[np.float64]
+        The 3D orientation of the agent in the simulation space.
     sensor: Sensor
         The sensor associated with the agent. Default is None, sensors is added in child classes if needed.
     """
 
+    # Cache for grid offsets to optimize neighbor searches
     _GRID_OFFSET_CACHE = {}
 
-    # Initialize agent with unique ID, position, engine reference, and empty sensor
+    
     def __init__(self,
                  engine: "Engine",
-                 agent_id: str | None = None,
-                 position: NDArray[np.float64] | None = None,
-                 orientation: NDArray[np.float64] | None = None
+                 agent_id: str | None = None, # Set default to None to avoid reoccurring ID generation
+                 position: NDArray[np.float64] | None = None, # Set default to None to avoid reoccurring position generation
+                 orientation: NDArray[np.float64] | None = None # Set default to None to avoid reoccurring orientation generation
                  ):
+
+        self.engine = engine
 
         # Generate a unique agent_id at instantiation time when not provided.
         if agent_id is None:
-            agent_id = nanoid.generate(size=7)
-
-        self.agent_id = agent_id
-        self.engine = engine
+            self.agent_id = nanoid.generate(size=7)
+        else:
+            self.agent_id = agent_id
 
         # Sets the initial position of the agent, defaulting to [0, 0, 0] if not provided.
         if position is None:
@@ -83,14 +83,12 @@ class Agent:
         else:
             self.orientation = orientation
 
-        # Initializes the sensor attribute to None, indicating that the agent does not have an associated sensor by default.
+        # Initializes the sensor to None, indicating that the agent does not have an associated sensor by default.
         self.sensor = None
 
     def find_neighbours(self, agents: Sequence["Agent"], n_neighbors: int) -> list | None:
         """
-        Finds the *n_neighbors* nearest agents from *agents* using Euclidean distance.
-        The calling agent is automatically excluded from the candidate list so an
-        agent is never returned as its own neighbor.
+        Finds the *n_neighbors* nearest agents from *self* using Euclidean distance. The calling agent is automatically excluded from the candidate list so an agent is never returned as its own neighbor.
 
         Parameters
         ----------
@@ -101,20 +99,22 @@ class Agent:
 
         Returns
         -------
-        neighbours : list
-            A list of nearest agents, also if *n_neighbors == 1*.
+        neighbours : list or None
+            A list of nearest agents, also if *n_neighbors == 1*. Returns None if no agents are found.
         """
 
-        # Exclude self so the calling agent is never its own neighbor
+        # Guard: Exclude self so the calling agent is never its own neighbor
         if self in agents:
             agents = [a for a in agents if a is not self]
 
+        # Guard: Return None if no agents are found
         if not agents:
             return None
 
         n = len(agents)
         k = min(n_neighbors, n)
 
+        # Use a KD-tree for efficient nearest neighbor search
         pos = np.vstack([a.position for a in agents])
         tree = _cKDTree(pos)
         dists, idxs = tree.query(self.position, k=k)
@@ -127,9 +127,10 @@ class Agent:
                 idxs = [int(i) for i in np.atleast_1d(idxs)]
 
             result: list = [agents[i] for i in idxs]
+
         return result
 
-    def find_grid_neighbours(self, search_boundary: float = 1.0) -> list:
+    def find_grid_neighbours(self, search_boundary: float = 1.0) -> list | None:
         """
         Finds neighboring agents using the grid-based neighbor search. The calling agent is automatically excluded
         from the candidate list so an agent is never returned as its own neighbor.
@@ -142,18 +143,19 @@ class Agent:
 
         Returns
         -------
-        neighbor_agents : list or Agent
-            A list of nearest agents within the specified boundary.
+        neighbor_agents : list or None
+            A list of nearest agents within the specified boundary, or None if no agents are found.
 
         """
 
+        # Load the agent's current grid cell and the simulation grid
         cell = self.engine.context.agent_grid_cells[self.agent_id]
         grid = self.engine.context.grid
         cx, cy, cz = cell
 
         radius = int(search_boundary)
 
-        # Check of grid offset already exist, otherwise generate
+        # Check if grid offset already exist, otherwise generate
         if radius in self._GRID_OFFSET_CACHE:
             offsets = self._GRID_OFFSET_CACHE[radius]
         else:
@@ -176,13 +178,13 @@ class Agent:
             if cell_agents:
                 extend([agent for agent in cell_agents if agent is not self])
 
-        return neighbor_agents
+        return neighbor_agents if neighbor_agents else None
 
     def check_out_of_bounds(self) -> NDArray[np.float64]:
         """
         Clamps the agent's position to the simulation context boundaries and returns the result.
 
-        Expects engine.context.dimensions to be a 6-element array in the form
+        Expects engine.context.dimensions to be a 6-element array in the following order:
         [x_min, y_min, z_min, x_max, y_max, z_max].
 
         Returns
@@ -199,8 +201,7 @@ class Agent:
 
     def move_position(self, position: NDArray[np.float64], orientation: NDArray[np.float64] = None):
         """
-        Moves the agent to a new position and orientation, optional. It also does a check so that the agent
-        is still within the bounds of the context.
+        Moves the agent to a new position and orientation, optional. It also does a check so that the agent is still within the bounds of the context.
 
         Parameters
         ----------
@@ -216,12 +217,12 @@ class Agent:
         if orientation is not None:
             self.orientation = orientation
 
+        # Update the agent's position in the context's grid after moving
         self.engine.context.update_agent_grid(self)
 
     def move_vector(self, move_vector: NDArray[np.float64], rotation_vector: NDArray[np.float64] = None):
         """
-        Moves and rotates the agent to a new position based on a move vector and a rotation vector, optional.
-        It also does a check so that the agent is still within the bounds of the context.
+        Moves and rotates the agent to a new position based on a move vector and a rotation vector, optional. It also does a check so that the agent is still within the bounds of the context.
 
         Parameters
         ----------
@@ -230,19 +231,20 @@ class Agent:
         rotation_vector : NDArray[np.float64], optional
             The rotation vector.
         """
+
         self.position += move_vector
         self.position = self.check_out_of_bounds()
-        # print(self.position)
 
         if rotation_vector is not None:
             self.orientation += rotation_vector
 
+        # Update the agent's position in the context's grid after moving
         self.engine.context.update_agent_grid(self)
 
 
-    def calculate_distance(self, other_agent: "Agent") -> floating[Any]:
+    def calculate_distance(self, other_agent: "Agent") -> float:
         """
-        Calculates the Euclidean distance between this agent and *other_agent*.
+        Calculates the Euclidean distance between *self* and *other_agent*.
 
         Parameters
         ----------
@@ -251,16 +253,15 @@ class Agent:
 
         Returns
         -------
-        dist : floating[Any]
+        distance : float
             The Euclidean distance between the two agents.
         """
-        return np.linalg.norm(self.position - other_agent.position)
+        return float(np.linalg.norm(self.position - other_agent.position))
 
 # %%
 class Sensor:
     """
-    A class representing a sensor that logs data from an agent over time. The sensor logs the sensory data based on the
-    getter list that is fed as arguments when the sensor is added to the run_schedule.
+    A class representing a virtual sensor that logs data from an agent at a given frequency. The sensor logs the parent agent's properties and values based on the getter list. Frequency is determined when the sensor's *entry* method is added to the action schedule of the simulaiton, using the interval parameter. The sensor can also merge its log with another sensor's log.
 
     Parameters
     ----------
@@ -283,12 +284,12 @@ class Sensor:
     # Logs data entries based on specified getters
     def entry(self, *getters: list):
         """
-        Logs a data entry by calling specified getter methods from the parent agent.
+        Logs a data entry by reading properties/attributes from the parent agent.
 
         Parameters
         ----------
-        getters : list
-            A list of names of all the getter method to call.
+        getters : list[str]
+            A list of names of all the propoerties/attributes to log. 
         """
         entry = dict()
 
@@ -297,15 +298,15 @@ class Sensor:
 
             # check if data is numpy array and convert to list
             if isinstance(data, np.ndarray):
-                data = (data.tolist())  # to avoid reference issues with mutable data types
+                data = (data.tolist())
             else:
                 data = copy.copy(data)  # to avoid reference issues with mutable data types
 
-
+            # Store the data in the entry dictionary with the property name as the key
             entry[arg] = data
 
+        # Store the entry in the logger with the current tick as the key
         self.logger[self.parent.engine.tick] = entry
-        # print(self.engine.getTick())
 
     def merge_logger(self, other_logger: dict):
         """

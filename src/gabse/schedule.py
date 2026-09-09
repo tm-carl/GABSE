@@ -1,33 +1,34 @@
 """
 This module contains the simulation scheduling classes.
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
-# %%
-# Import required packages
 from sortedcontainers import SortedList
+
+if TYPE_CHECKING:
+    from .agent import Agent, Sensor
+
 
 # %%
 class Action:
     """
-    A class representing a scheduled action in the simulation. Each behavior that is to be invoked by an agent is
-    scheduled and called using *Action*. It is possible to set an action to be reoccurring by using the *interval*
-    parameter.
+    A class representing a scheduled action in the simulation. Each behavior that is to be executed by an agent is scheduled and called using this *Action* class. It is possible to set an action to be reoccurring by using the *interval* parameter.
 
     Parameters
     ----------
     tick: float
         The simulation tick at which the action is scheduled to occur.
-    agent: Agent
-        The agent that will perform the action.
+    agent: Agent | Sensor
+        The agent or sensor that will perform the action.
     method: str
         The name of the method to be called on the agent.
     args: list, optional
-        The arguments to be passed to the method. Can be None, empty list, or "" if no arguments are needed.
+        The arguments to be passed to the method. Can be None if no arguments are needed.
     priority: int, optional
         The priority of the action (lower values indicate higher priority). Default is 0.
     interval: float, optional
-        The interval for recurring actions. If greater than 0, the action will be rescheduled
-        after execution. Default is 0.
+        The interval for recurring actions, has to be a non-negative number. If greater than 0, the action will be rescheduled after execution. Default is 0.
 
     Attributes
     ----------
@@ -42,14 +43,13 @@ class Action:
     priority: int, optional
         The priority of the action (lower values indicate higher priority). Default is 0.
     interval: float, optional
-        The interval for recurring actions, has to be. If greater than 0, the action will be rescheduled
-        after execution. Default is 0.
+        The interval for recurring actions, has to be a non-negative number. If greater than 0, the action will be rescheduled after execution. Default is 0.
     """
 
     def __init__(
         self,
         tick: float,
-        agent,
+        agent: "Agent" | "Sensor",
         method: str,
         args: list | None = None,
         priority: int = 0,
@@ -62,10 +62,11 @@ class Action:
         self.priority = int(priority)
         self.interval = float(interval)
 
-        # check so that interval is greater than zero, if not set to zero.
+        # Guard: check so that interval is greater than zero, if not set to zero.
         if self.interval < 0.0:
             self.interval = 0.0
 
+    # Override the string representation of the Action class for better readability
     def __str__(self):
         return f"Action entry:\ntick: {self.tick}, agent: {self.agent}, method: {self.method}, arguments: {self.args}, priority: {self.priority}, interval: {self.interval}"
 
@@ -74,13 +75,9 @@ class Action:
 # %%
 class Schedule:
     """
-    A class for managing and executing scheduled actions in the simulation. The core of the schedule is a list where
-    all planned actions are stored and executed one by one. The schedule uses a SortedList to maintain order of the
-    actions based on tick and priority.
+    A class for managing and executing scheduled actions in the simulation. The core of the schedule is a list where all planned actions are stored and executed one by one. The schedule uses a SortedList to maintain order of the actions based on tick and priority. The schedule uses an event-based stepping approach meaning that it does not use fixed tick steps but instead jumps between the ticks of the scheduled actions. This means that the tick can step in various lengths depending on the actions. A dynamic tick step approach enables greater flexibility and faster simulations.
 
-    The schedule uses an event-based stepping approach meaning that it does not use fixed tick steps but instead jumps
-    between the ticks of the scheduled actions. This means that the tick can step in various lengths depending on the
-    actions. A dynamic tick step approach enables greater flexibility and faster simulations.
+    The schedule also has a separate list for end actions that are executed at the end of the simulation, after all regular actions have been executed. This allows for cleanup or finalization tasks to be performed after the main simulation loop has completed.
 
 
     Attributes
@@ -96,12 +93,9 @@ class Schedule:
         self.run_schedule = SortedList(key=lambda a: (a.tick, a.priority))
         self.post_process = SortedList(key=lambda a: a.priority)
 
-    # Schedule method for adding an action in run_schedule
     def schedule_action(self, action: Action):
         """
-        Schedules an action and places it according to its tick and priority.
-        Raises ``AttributeError`` immediately if the method name does not exist on
-        the agent, so typos are caught at scheduling time rather than execution time.
+        Schedules an action and places it in the *run_schedule* according to its tick and priority.
 
         Parameters
         ----------
@@ -111,12 +105,14 @@ class Schedule:
         Raises
         ------
         AttributeError
-            If the agent does not have a method matching *action.method*.
+            The agent does not have a method matching *action.method*.
         """
+
         if not hasattr(action.agent, action.method):
             raise AttributeError(
                 f"Agent '{type(action.agent).__name__}' has no method '{action.method}'."
             )
+
         self.run_schedule.add(action)
 
     def schedule_post_process(self, action: Action):
@@ -131,12 +127,14 @@ class Schedule:
         Raises
         ------
         AttributeError
-            If the agent does not have a method matching *action.method*.
+            The agent does not have a method matching *action.method*.
         """
+
         if not hasattr(action.agent, action.method):
             raise AttributeError(
                 f"Agent '{type(action.agent).__name__}' has no method '{action.method}'."
             )
+
         self.post_process.add(action)
 
     def remove_agent_from_list(self, target, remove_post_process: bool = True):
@@ -151,6 +149,7 @@ class Schedule:
         remove_post_process : bool, optional
             Whether to also remove the agent's end actions. Default is True.
         """
+
         self.run_schedule = SortedList(
             [action for action in self.run_schedule if action.agent != target],
             key=lambda action: (action.tick, action.priority),

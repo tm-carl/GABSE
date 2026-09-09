@@ -19,9 +19,9 @@ class Context:
     Parameters
     ----------
     dimensions : NDArray[np.float64], optional
-        The dimensions of the simulation environment, based on 3D representation. If no dimensions are provided,
-        it will use an unbonded set (-Inf to Inf). The order of XYZ boundaries is done
-        the following: *[X-min, Y-min, Z-min, X-max, Y-max, Z-max]*
+        The dimensions of the simulation environment, based on 3D representation. If no dimensions are provided, it will use an unbonded set (-Inf to Inf). The order of XYZ boundaries is done the following: *[X-min, Y-min, Z-min, X-max, Y-max, Z-max]*
+    grid_cell_size : float, optional
+        The size of each grid cell for spatial partitioning. Default is 1.0.
 
     Attributes
     ----------
@@ -33,11 +33,11 @@ class Context:
         A reverse look-up table to know in which cell a specific agent is.
     grid_cell_size : float
         The size of each grid cell for spatial partitioning.
-    agents: dict
-        A dictionary of agents present in the simulation.
+    agents: dict[str, Agent]
+        A dictionary of agents present in the simulation. Agent ID is used as the key and the agent object as the value.
 
     """
-    # Initializes the context with dimensions and empty agent list
+    
     def __init__(
             self,
             dimensions: NDArray[np.float64] = np.array([-np.inf, -np.inf, -np.inf, np.inf, np.inf, np.inf]),
@@ -51,6 +51,19 @@ class Context:
         self.agents: dict[str, Agent] = {}
 
     def get_grid_cell(self, pos):
+        """
+        Gets the grid cell for a given position.
+
+        Parameters
+        ----------
+        pos : NDArray[np.float64]
+            The position for which to get the grid cell.
+
+        Returns
+        -------
+        cell : tuple
+            The grid cell coordinates.
+        """
         return tuple((pos // self.grid_cell_size).astype(int))
 
     def add_agent(self, agent: Agent):
@@ -64,6 +77,7 @@ class Context:
         """
         self.agents[agent.agent_id] = agent
 
+        # Add the agent to the grid
         cell = self.get_grid_cell(agent.position)
         self.grid[cell].add(agent.agent_id)
         self.agent_grid_cells[agent.agent_id] = cell
@@ -77,12 +91,13 @@ class Context:
         agent : Agent
             The agent whose grid cell is to be updated.
         """
+
         old_cell = self.agent_grid_cells.get(agent.agent_id)
         new_cell = self.get_grid_cell(agent.position)
 
-        #print(self.grid)
-
+        # Update the grid only if the agent has moved to a new cell
         if old_cell != new_cell:
+            # Guard: Check if the agent is in the expected old cell before removing it
             if agent.agent_id not in self.grid.get(old_cell, set()):
                 raise ValueError(f"WARNING: Agent {agent.agent_id} not in expected cell {old_cell}")
 
@@ -106,15 +121,17 @@ class Context:
         agent : Agent
             The agent to be removed.
         """
-        #self.agents.remove(agent)
+        
         self.agents.pop(agent.agent_id, None)
 
+        # Remove the agent from the grid
         cell = self.get_grid_cell(agent.position)
         self.grid[cell].remove(agent.agent_id)
 
         if not self.grid[cell]:  # Clean up empty cells
             del self.grid[cell]
 
+        # Remove the agent from the reverse look-up table
         self.agent_grid_cells.pop(agent.agent_id, None)
 
     def get_agents_by_class(self, cls: type) -> list:
@@ -148,7 +165,7 @@ class Context:
             The agent with the specified unique identifier, or None if not found.
         """
 
-        return self.agents.get(agent_id)
+        return self.agents.get(agent_id, None)
 
 
     def get_agent_count(self, classes: list[type] | None = None) -> dict:
@@ -158,8 +175,7 @@ class Context:
         Parameters
         ----------
         classes : list[type], optional
-            A list of types to count, e.g. ``[HumanAgent, ZombieAgent]``.
-            If *None*, every distinct type present in the context is counted.
+            A list of types to count, e.g. ``[HumanAgent, ZombieAgent]``. If *None*, every distinct type present in the context is counted.
 
         Returns
         -------
