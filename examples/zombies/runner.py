@@ -55,10 +55,17 @@ if __name__ == "__main__":
     tic = time.perf_counter()
 
     model_time=1000
-    person_quantity=10
+    person_quantity=100
     person_speed=1
     zombie_quantity=1
     zombie_speed=0.01
     progress_bar = True
+
+    print(f"Running simulation with parameters:\n\tmodel_time={model_time}",
+          f"\n\tperson_quantity={person_quantity}",
+          f"\n\tperson_speed={person_speed}",
+          f"\n\tzombie_quantity={zombie_quantity}",
+          f"\n\tzombie_speed={zombie_speed}",
+          f"\n\tprogress_bar={progress_bar}")
 
     run_simulation(model_time, person_quantity, person_speed, zombie_quantity, zombie_speed, progress_bar)
