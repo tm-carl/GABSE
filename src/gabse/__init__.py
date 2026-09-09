@@ -8,7 +8,11 @@ This is the GABSE (Generic Agent-Based Simulation Engine) framework.
 # version number
 __name__ = "gabse"
 __author__ = "Carl Toller Melén"
-__version__ = "0.1.11"
+__credits__ = ["Carl Toller Melén"]
+__description__ = "A generic agent-based simulation engine."
+__maintainer__ = "Carl Toller Melén"
+__license__ = "MIT"
+__version__ = "0.1.12"
 __email__ = "carl@tollermelen.se"
 __status__ = "Development"
 
