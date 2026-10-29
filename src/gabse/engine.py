@@ -80,7 +80,7 @@ class Engine:
         self.tick = 0.0
         self.model_time = model_time
         self.schedule = Schedule()
-        self.data_logger = DataCollector()
+        self.data_collector = DataCollector()
         self.aborted = False
         self.context = context
         self.progress_bar = progress_bar
@@ -142,17 +142,17 @@ class Engine:
             print("Warning: no_arg_out should be 0, 1, or 2. Returning nothing.")
             return None
 
-        self.data_logger.collect_kpis(tick=self.tick, context=self.context, agents=self.context.agents)
+        self.data_collector.collect_kpis(tick=self.tick, context=self.context, agents=self.context.agents)
 
         if no_arg_out == 1: # returns collected KPIs as a dictionary
-            return self.data_logger.export_kpis()
+            return self.data_collector.export_kpis()
 
         # no_arg_out == 2, activated as last option if none of previous have been true.
         # returns collected KPIs and log data as a tuple of dictionaries. Logs of retired agents
         # (removed with keep_log=True) are included. A live agent wins if an id is shared.
         retired_agents = getattr(self.context, "retired_agents", {})
-        self.data_logger.collect_data(agents={**retired_agents, **self.context.agents})
-        return self.data_logger.export_kpis(), self.data_logger.export_data()
+        self.data_collector.collect_data(agents={**retired_agents, **self.context.agents})
+        return self.data_collector.export_kpis(), self.data_collector.export_data()
 
     def abort(self):
         """
