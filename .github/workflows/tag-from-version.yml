@@ -32,7 +32,8 @@ jobs:
 
           TAG="v${{ steps.get_version.outputs.version }}"
 
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
+          # Check the remote: the shallow checkout does not fetch existing tags
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag already exists"
           else
             git tag $TAG
