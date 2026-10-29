@@ -95,10 +95,12 @@ class Context:
         # Remove the agent from the reverse look-up table
         self.agent_grid_cells.pop(agent.agent_id, None)
 
-        # Remove the agent: stop its actions (sensor readings) so the log ends now, and keep it for the log output
-        if keep_log and removed is not None:
+        # Remove the agent: stop its actions (including sensor readings) so the log ends now, and keep it for the log output
+        if removed is not None:
             agent.engine.schedule.cancel_agent_actions(agent)
-            self.data_collector.store_log(agent)
+
+        if keep_log:
+            agent.engine.data_collector.store_log(agent)
             return
 
     def retire_agent(self, agent: Agent):
