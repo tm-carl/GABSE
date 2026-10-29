@@ -12,7 +12,7 @@ __credits__ = ["Carl Toller Melén", "Raj Jiten Machchhar"]
 __description__ = "The GABSE (Generic Agent-Based Simulation Engine) framework"
 __maintainer__ = "Carl Toller Melén"
 __license__ = "MIT"
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 __email__ = "carl@tollermelen.se"
 __status__ = "Development"
 
