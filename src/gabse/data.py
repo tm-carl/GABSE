@@ -42,6 +42,10 @@ class DataCollector:
             copy.copy(agent.sensor.logger) # Copy the sensor log to avoid reference issues
         )
 
+    # ----------------------
+    # Collecting and exporting results (called by Engine.run)
+    # ----------------------
+
     def collect_data(self, agents: dict[str, "Agent"]):
         """
         Collects data from all agents' sensors and stores it in the repository. This method iterates through all agents in the simulation context. Each agent's sensor log is copied and stored in the repository with a key that combines the agent's class name and ID.
@@ -56,10 +60,8 @@ class DataCollector:
 
         for agt in agents.values():
             if agt.sensor is not None:
-                self.repo[f"{agt.__class__.__name__} {agt.agent_id}"] = (
-                    copy.copy(agt.sensor.logger) # Copy the sensor log to avoid reference issues
-                )
-
+                # Copy the sensor log to avoid reference issues
+                self.repo[f"{agt.__class__.__name__} {agt.agent_id}"] = copy.copy(agt.sensor.logger)
 
     def export_data(self):
         """
@@ -95,32 +97,19 @@ class DataCollector:
         # Gets the total model time
         self.kpi["model_time"] = tick
 
-        collected_kpi = dict()
-
         # Search for "get_kpis" method in the context and call it if exists
-        method = getattr(context, "get_kpis", None)
-        if callable(method):
-            kpis = method()
-            if isinstance(kpis, dict):
-                collected_kpi |= kpis
-            else:
-                raise ValueError("``get_kpis`` method found in context but did not return a dictionary.")
+        context_kpis = self._read_kpis(context, "context")
 
-
-        self.kpi |= collected_kpi
+        if context_kpis is not None:
+            self.kpi |= context_kpis
 
         # Search for "get_kpis" method in the agents and call it if exists
         for agt in agents.values():
-            agt_kpi = dict()
-            method = getattr(agt, "get_kpis", None)
-            if callable(method):
-                kpis = method()
-                if isinstance(kpis, dict):
-                    agt_kpi |= kpis
-                else:
-                    raise ValueError(f"``get_kpis`` method found in {agt} but did not return a dictionary.")
+            agent_kpis = self._read_kpis(agt, agt)
 
-                self.kpi[f"{agt.__class__.__name__} {agt.agent_id}"] = agt_kpi
+            if agent_kpis is not None:
+                # Store a copy, so that later changes to the dictionary returned by the agent do not alter the KPIs
+                self.kpi[f"{agt.__class__.__name__} {agt.agent_id}"] = dict(agent_kpis)
 
     def export_kpis(self):
         """
@@ -133,3 +122,41 @@ class DataCollector:
 
         """
         return self.kpi
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _read_kpis(source, label) -> dict | None:
+        """
+        Calls the ``get_kpis`` method of *source* if it has one.
+
+        Parameters
+        ----------
+        source : Context | Agent
+            The context or agent to read the KPIs from.
+        label : object
+            What to call *source* in the error message, e.g. "context" or the agent.
+
+        Returns
+        -------
+        kpis : dict or None
+            The dictionary returned by ``get_kpis``, or None if *source* has no such method.
+
+        Raises
+        ------
+        ValueError
+            If ``get_kpis`` does not return a dictionary.
+        """
+        method = getattr(source, "get_kpis", None)
+
+        if not callable(method):
+            return None
+
+        kpis = method()
+
+        if not isinstance(kpis, dict):
+            raise ValueError(f"``get_kpis`` method found in {label} but did not return a dictionary.")
+
+        return kpis

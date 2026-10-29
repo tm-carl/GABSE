@@ -10,6 +10,8 @@ and management.
 
 You can find the package on PyPi [here](https://pypi.org/project/gabse/)
 
+You can read more about GABSE and how it works on the [wiki](https://github.com/tm-carl/GABSE/wiki)
+
 ## Installation
 
 GABSE can be installed from PyPi using pip.
@@ -20,8 +22,6 @@ pip install gabse
 ```python
 pip install gabse --upgrade
 ```
-
-
 
 ### Dependencies
 

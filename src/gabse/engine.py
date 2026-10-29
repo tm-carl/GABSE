@@ -1,8 +1,11 @@
 """
 This module contains the simulation engine class.
 """
+import reprlib
+
 from tqdm import tqdm
 
+from .agent import Sensor
 from .data import DataCollector
 from .context import Context
 from .schedule import Schedule, Action
@@ -84,8 +87,11 @@ class Engine:
 
         if progress_bar:
             self.last_time = 0.0
-            self.total_time = model_time
-            self.pbar = tqdm(total=self.total_time, desc="Simulation progress bar", leave=True, position=0)
+            self.pbar = tqdm(total=model_time, desc="Simulation progress bar", leave=True, position=0)
+
+    # ----------------------
+    # Run control
+    # ----------------------
 
     def run(self, no_arg_out:int = 0) -> None | dict | tuple:
         """
@@ -111,9 +117,10 @@ class Engine:
             The collected log data from the simulation, returned if *no_arg_out* is 2.
         """
 
-        # Continuously steps through the run_schedule until the model time is reached or the run_schedule is empty.
-        while self.tick <= self.model_time and len(self.schedule.run_schedule) > 0 and not self.aborted:
-            self.step(self.tick)
+        # Continuously steps through the run_schedule until it is empty or the simulation is aborted. step() drops the
+        # actions scheduled after the model time, so the tick never exceeds it.
+        while self.schedule.run_schedule and not self.aborted:
+            self.step()
 
             # Update progress bar if enabled
             if self.progress_bar:
@@ -123,34 +130,38 @@ class Engine:
                     self.pbar.update(time_increment)
                     self.last_time = self.tick
 
-                if self.tick > self.model_time:
-                    self.pbar.close()
-
-
         # At the end of the simulation, iterate through end actions assigned (allowing for final events to occur)
         while len(self.schedule.post_process) > 0:
             self.end_step()
 
-        # Return collected KPIs and data based on the value of no_arg_out
+        # Return nothing, the KPIs, or the KPIs and the log data, based on the value of no_arg_out
         if no_arg_out == 0: # default, returns nothing
             return None
-        elif no_arg_out == 1: # returns collected KPIs as a dictionary
-            self.data_logger.collect_kpis(tick=self.tick, context=self.context, agents=self.context.agents)
-            return self.data_logger.export_kpis()
-        elif no_arg_out == 2: # returns collected KPIs and log data as a tuple of dictionaries
-            self.data_logger.collect_kpis(tick=self.tick, context=self.context, agents=self.context.agents)
-            self.data_logger.collect_data(agents=self.context.agents)
-            return self.data_logger.export_kpis(), self.data_logger.export_data()
-        else: # if no_arg_out is not 0, 1, or 2, returns nothing and prints a warning message.
+
+        if no_arg_out not in (1, 2): # returns nothing and prints a warning message.
             print("Warning: no_arg_out should be 0, 1, or 2. Returning nothing.")
             return None
-        
+
+        self.data_logger.collect_kpis(tick=self.tick, context=self.context, agents=self.context.agents)
+
+        if no_arg_out == 1: # returns collected KPIs as a dictionary
+            return self.data_logger.export_kpis()
+
+        # no_arg_out == 2, activated as last option if none of previous have been true.
+        # returns collected KPIs and log data as a tuple of dictionaries. Logs of retired agents
+        # (removed with keep_log=True) are included. A live agent wins if an id is shared.
+        retired_agents = getattr(self.context, "retired_agents", {})
+        self.data_logger.collect_data(agents={**retired_agents, **self.context.agents})
+        return self.data_logger.export_kpis(), self.data_logger.export_data()
 
     def abort(self):
         """
-        Aborts the simulation. This method clears the run_schedule, sets the aborted flag to True, and updates the progress bar to indicate that the simulation has been aborted effectively making the *run()* method exit its main loop and stop the simulation, including post-processing.
+        Aborts the simulation. This method clears the run_schedule, sets the aborted flag to True, and updates the progress bar to indicate that the simulation has been aborted effectively making the *run()* method exit its main loop and stop the simulation, including post-processing. It is safe to call from inside an action: the action being executed finishes normally and is not rescheduled.
         """
-        self.schedule.run_schedule.clear()
+        # Cancelling a queued action removes it from the list, so the actions are collected first
+        for action in list(self.schedule.run_schedule):
+            self.schedule.cancel_action(action)
+
         self.aborted = True
 
         # Updates the progress bar to read 100%
@@ -160,68 +171,87 @@ class Engine:
             self.pbar.refresh()
             self.pbar.close()
 
-    def step(self, old_tick):
+    # ----------------------
+    # Action stepping
+    # ----------------------
+
+    def step(self):
         """
         Steps one entry in the run_schedule. The step method executes the next action entry and, if reoccurring, re-schedules it. It also moves the tick forward one instance, can be the same if multiple actions are scheduled at the same tick.
 
-        Parameters
-        ----------
-        old_tick : float
-            The current tick before stepping.
-
+        The action is taken out of the run_schedule before it is executed, so the action may freely schedule or cancel other actions (including its own agent's actions) and may call *abort()*. A recurring action is re-queued as the same object with its tick advanced by its interval, which keeps its priority.
         """
-        # Guard: return early if the run_schedule is empty
-        if not self.schedule.run_schedule:
+        schedule = self.schedule
+        queue = schedule.run_schedule
+
+        # Guard: Drop cancelled actions, stale actions whose tick is earlier than the current engine tick, and actions
+        # scheduled after the specified model time (i.e., beyond the simulation's time horizon)
+        while queue and (queue[0].cancelled or queue[0].tick < self.tick or queue[0].tick > self.model_time):
+            schedule.cancel_action(queue[0])
+
+        # Guard: return early if no valid action remains
+        if not queue:
             return
 
-        # Guard: Remove any stale actions whose tick is earlier than the current engine tick
-        while self.schedule.run_schedule and self.schedule.run_schedule[0].tick < old_tick:
-            self.schedule.run_schedule.pop(0)
-
-        # Guard: Remove any actions scheduled after the specified model time (i.e., actions that are beyond the simulation's time horizon)
-        while self.schedule.run_schedule and self.schedule.run_schedule[0].tick > self.model_time:
-            self.schedule.run_schedule.pop(0)
-
-        # Guard: return early if all remaining actions were stale
-        if not self.schedule.run_schedule:
-            return
-
-        # Load the first action in run_schedule (sorted by tick and then by priority)
-        action = self.schedule.run_schedule[0]
+        # Take the first action (sorted by tick and then by priority) out of the run_schedule
+        action = schedule.take_next(queue)
 
         # Step to the action tick in the simulation
         self.tick = action.tick
 
-        # Call the action agent method
-        call_action(action)
+        # Call the action agent method. A failing action gets a note telling where it happened, then the exception is re-raised unchanged
+        try:
+            call_action(action)
+        except BaseException as exc:
+            if isinstance(exc, Exception):
+                exc.add_note(self._error_note(action, "run"))
+            schedule.finish_action(action, False)
+            raise
 
-        # Checks if the action is recurring and, if so, schedules next instance
-        if action.interval > 0.0:
-            nextAction = Action(
-                tick=action.tick + action.interval,
-                agent=action.agent,
-                method=action.method,
-                args=action.args,
-                interval=action.interval,
-            )
-            self.schedule.schedule_action(nextAction)
-
-        # Remove the executed action from the run_schedule
-        self.schedule.run_schedule.pop(0)
+        # Reschedule the action if recurring, unless it was cancelled or the simulation was aborted during the call
+        schedule.finish_action(action, action.interval > 0.0 and not action.cancelled and not self.aborted)
 
     def end_step(self):
         """
         Executes the next action in the end-of-simulation queue (*post_process*). Called by the engine after the main *run_schedule* is exhausted or the simulation is aborted, allowing final cleanup or summary actions to run.
         """
+        schedule = self.schedule
+
         # Guard: return early if the post_process is empty
-        if not self.schedule.post_process:
+        if not schedule.post_process:
             return
 
-        # Load the first action in post_process
-        action = self.schedule.post_process[0]
+        # Take the first action out of the post_process before executing it
+        action = schedule.take_next(schedule.post_process)
 
-        # Call the action agent method
-        call_action(action)
+        # Call the action agent method, unless it was cancelled
+        try:
+            if not action.cancelled:
+                call_action(action)
+        except Exception as exc:
+            exc.add_note(self._error_note(action, "post-process"))
+            raise
+        finally:
+            schedule.finish_action(action, False)
 
-        # Remove the executed action from the post_process
-        self.schedule.post_process.pop(0)
+    # ----------------------
+    # Internal helpers
+    # ----------------------
+    
+    def _error_note(self, action: Action, phase: str) -> str:
+        """Builds the note that tells which action was executing when an exception was raised."""
+        agent = action.agent
+        owner = agent.parent if isinstance(agent, Sensor) else agent
+        owner_text = f"{type(owner).__name__} {getattr(owner, 'agent_id', '?')}"
+        target_text = f"Sensor of {owner_text}" if isinstance(agent, Sensor) else owner_text
+
+        # Arguments can be large objects, so they are shortened, and a failing repr must not hide the real exception
+        try:
+            args_text = reprlib.repr(list(action.args)) if action.args else "[]"
+        except Exception:
+            args_text = "<unrepresentable>"
+
+        return (
+            f"gabse: action failed in {phase} at tick {self.tick} -> {target_text}.{action.method}(args={args_text}), "
+            f"priority {action.priority}, interval {action.interval}"
+        )

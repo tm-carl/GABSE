@@ -4,7 +4,9 @@ This module contains the simulation agent class.
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Any, Sequence
+import warnings
 
 if TYPE_CHECKING:
     from .engine import Engine
@@ -84,6 +86,10 @@ class Agent:
         # Initializes the sensor to None, indicating that the agent does not have an associated sensor by default.
         self.sensor = None
 
+    # ----------------------
+    # Neighbour search methods
+    # ----------------------
+
     def find_neighbours(self, agents: Sequence["Agent"], n_neighbors: int) -> list | None:
         """
         Finds the *n_neighbors* nearest agents from *self* using Euclidean distance. The calling agent is automatically excluded from the candidate list so an agent is never returned as its own neighbor.
@@ -109,53 +115,73 @@ class Agent:
         if not agents:
             return None
 
-        n = len(agents)
-        k = min(n_neighbors, n)
+        k = min(n_neighbors, len(agents))
 
         # Use a KD-tree for efficient nearest neighbor search
         pos = np.vstack([a.position for a in agents])
         tree = _cKDTree(pos)
-        dists, idxs = tree.query(self.position, k=k)
-        if k == 1:
-            result: list = [agents[int(idxs)]]
-        else:
-            if np.isscalar(idxs):
-                idxs = [int(idxs)]
-            else:
-                idxs = [int(i) for i in np.atleast_1d(idxs)]
+        _, idxs = tree.query(self.position, k=k)
 
-            result: list = [agents[i] for i in idxs]
+        # The tree returns a single index for k == 1 and an array of indices otherwise
+        return [agents[int(i)] for i in np.atleast_1d(idxs)]
 
-        return result
-
-    def find_grid_neighbours(self, search_boundary: float = 1.0) -> list | None:
+    def find_grid_neighbours(self, search_boundary: float = 1.0, search_shape: str = "cubic") -> list | None:
         """
         Finds neighboring agents using the grid-based neighbor search. The calling agent is automatically excluded
-        from the candidate list so an agent is never returned as its own neighbor.
+        from the result so an agent is never returned as its own neighbor.
 
         Parameters
         ----------
         search_boundary : float
-            The width of the search area around the agent, in the same units as the agent's position. The
-            search will include all grid cells that are within this distance from the agent's current cell.
+            The search distance around the agent, in the same units as the agent's position. The search covers every
+            grid cell within this distance of the agent's current cell, i.e. *ceil(search_boundary / grid_cell_size)*
+            cells in each direction. The search is done per cell, so an agent in a covered cell can be somewhat
+            further away than *search_boundary*. A distance of 0 searches the agent's own cell only.
+        search_shape : str
+            The shape of the search area, either "cubic" or "spherical". A cubic search covers every cell in the
+            (2r+1)^3 block around the agent's cell. A spherical search covers only the cells whose offset from the
+            agent's cell is within *r* cells (Euclidean distance between cell indices), where r is
+            ceil(search_boundary / grid_cell_size). The shape is applied to grid cells, not to agent positions.
 
         Returns
         -------
         neighbor_agents : list or None
-            A list of nearest agents within the specified boundary, or None if no agents are found.
+            A list of the agents found (the agent objects, not their ids), or None if no agents are found.
 
+        Raises
+        ------
+        ValueError
+            The agent has not been added to the context, or *search_boundary* is negative.
+
+        Warnings
+        --------
+        UserWarning
+            If *search_shape* is not "cubic" or "spherical", it defaults to "cubic" and a warning is issued.
         """
 
         # Load the agent's current grid cell and the simulation grid
-        cell = self.engine.context.agent_grid_cells[self.agent_id]
-        grid = self.engine.context.grid
-        cx, cy, cz = cell
+        context = self.engine.context
 
-        radius = int(search_boundary)
+        if self.agent_id not in context.agent_grid_cells:
+            raise ValueError(f"Agent {self.agent_id} must be added to the context before searching for neighbours.")
 
-        # Check if grid offset already exist, otherwise generate
-        if radius in self._GRID_OFFSET_CACHE:
-            offsets = self._GRID_OFFSET_CACHE[radius]
+        if search_boundary < 0:
+            raise ValueError(f"search_boundary must not be negative, got {search_boundary}.")
+
+        if search_shape not in ("cubic", "spherical"):
+            warnings.warn(f"search_shape must be either 'cubic' or 'spherical', got {search_shape}. Defulting to 'cubic'.")
+            search_shape = "cubic"
+
+        cx, cy, cz = context.agent_grid_cells[self.agent_id]
+        grid = context.grid
+
+        # Convert the distance in position units to a number of grid cells
+        radius = math.ceil(search_boundary / context.grid_cell_size)
+
+        # Check if grid offsets already exist for this radius and shape, otherwise generate
+        cache_key = (radius, search_shape)
+        if cache_key in self._GRID_OFFSET_CACHE:
+            offsets = self._GRID_OFFSET_CACHE[cache_key]
         else:
             r_range = range(-radius, radius + 1)
             offsets = [
@@ -164,19 +190,31 @@ class Agent:
                 for dy in r_range
                 for dz in r_range
             ]
-            self._GRID_OFFSET_CACHE[radius] = offsets
+            if search_shape == "spherical":
+                r_sq = radius * radius
+                offsets = [
+                    (dx, dy, dz) for dx, dy, dz in offsets
+                    if dx * dx + dy * dy + dz * dz <= r_sq
+                ]
+            self._GRID_OFFSET_CACHE[cache_key] = offsets
 
-        # Generate export list
+        # Search the grids for agents. The grid holds agent ids, so each id is looked up in the context; an id that
+        # is no longer registered there (a stale grid entry) is skipped.
         neighbor_agents = []
-        extend = neighbor_agents.extend
+        agents = context.agents
 
-        # Search the grids for agents
         for dx, dy, dz in offsets:
-            cell_agents = grid.get((cx + dx, cy + dy, cz + dz))
-            if cell_agents:
-                extend([agent for agent in cell_agents if agent is not self])
+            cell_agent_ids = grid.get((cx + dx, cy + dy, cz + dz))
+            if cell_agent_ids:
+                for agent_id in cell_agent_ids:
+                    if agent_id != self.agent_id and agent_id in agents:
+                        neighbor_agents.append(agents[agent_id])
 
         return neighbor_agents if neighbor_agents else None
+
+    # ----------------------
+    # Position and movement
+    # ----------------------
 
     def check_out_of_bounds(self) -> NDArray[np.float64]:
         """
@@ -216,7 +254,7 @@ class Agent:
             self.orientation = orientation
 
         # Update the agent's position in the context's grid after moving
-        self.engine.context.update_agent_grid(self)
+        self.engine.context._update_agent_grid(self)
 
     def move_vector(self, move_vector: NDArray[np.float64], rotation_vector: NDArray[np.float64] = None):
         """
@@ -237,7 +275,7 @@ class Agent:
             self.orientation += rotation_vector
 
         # Update the agent's position in the context's grid after moving
-        self.engine.context.update_agent_grid(self)
+        self.engine.context._update_agent_grid(self)
 
 
     def calculate_distance(self, other_agent: "Agent") -> float:
