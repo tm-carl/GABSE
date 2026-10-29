@@ -41,15 +41,11 @@ class Builder:
         self.context = self.engine.context
 
         # Set up the simulation context with agents
-        # Import gabse using the environment (runner inserts repo/src into sys.path)
-        import gabse
-
-        # Set up the simulation context with agents
         self.populate_context()
 
     # Method to set up the simulation context with agents
     def populate_context(self):
-        import gabse
+        import src.gabse as gabse
 
         low = self.dimensions[0:3]
         high = self.dimensions[3:]

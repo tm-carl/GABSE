@@ -57,8 +57,8 @@ if __name__ == "__main__":
     model_time=1000
     person_quantity=100
     person_speed=1
-    zombie_quantity=1
-    zombie_speed=0.01
+    zombie_quantity=10
+    zombie_speed=2.1
     progress_bar = True
 
     print(f"Running simulation with parameters:\n\tmodel_time={model_time}",

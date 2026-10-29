@@ -34,10 +34,18 @@ class Person(gabse.Agent):
         return list(zombies)
 
     def find_closest_zombie(self):
-        close_zombies: list = [z for z in self.find_grid_neighbours(self.view_distance) if isinstance(z, Zombie)]
-        closest_zombie: list | None = self.find_neighbours(close_zombies, 1)
+        # Collects all neighbour agents
+        ngh = self.find_grid_neighbours(self.view_distance, "cubic")
 
-        return closest_zombie
+        # Filters the neighbours to find only zombies and returns the closest one, if any are found.
+        # If ngh is empty, returns None.
+        if ngh:
+            close_zombies: list = [z for z in ngh if isinstance(z, Zombie)]
+            closest_zombie: list | None = self.find_neighbours(close_zombies, 1)
+
+            return closest_zombie
+        
+        return None
 
     # Run method for the Person agent
     def run(self):
@@ -49,7 +57,13 @@ class Person(gabse.Agent):
             distVector = ngh[0].position - self.position
 
             # Run away if the zombie is within 10 units and not at the same position
-            normVector = distVector / np.linalg.norm(distVector)
+            norm = np.linalg.norm(distVector)
+
+            # Avoid dividing by zero (NaN position) when the zombie is at the same position
+            if norm == 0:
+                normVector = np.zeros_like(distVector)
+            else:
+                normVector = distVector / norm
             runVector = normVector * -1 * self.speed
             self.move_vector(runVector)
 
@@ -122,13 +136,9 @@ class Zombie(gabse.Agent):
 
         victim.alive = False
         victim.sensor.entry("position", "alive")
-        self.engine.data_logger.store_log(victim)
-        sensor = victim.sensor
 
-        self.engine.schedule.remove_agent_from_list(victim)
-        self.engine.schedule.remove_agent_from_list(sensor)
-
-        self.engine.context.remove_agent(victim)
+        # remove_agent including scheduled actions untouched, so cancel the victim's recurring actions
+        self.engine.context.remove_agent(victim, keep_log=True)
 
 
 
